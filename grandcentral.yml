@@ -1,4 +1,5 @@
 deploy_mechanism: none
+display_name: "NewRelicLogstashOutput"
 test_suites:
 - command: |
     mkdir -p ~/.gem
