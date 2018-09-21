@@ -30,6 +30,4 @@ build:
       bundle install
       gem release --host https://artifacts.datanerd.us/api/gems/newrelic-gems-local
   read_version:
-    command: cat ./lib/logstash/version.rb | grep VERSION | awk '{
-      gsub("\"", "", $3); print $3 }'
-
+    command: grep version logstash-output-newrelic.gemspec | tr -d "'\"" | awk '{ print $3 }'

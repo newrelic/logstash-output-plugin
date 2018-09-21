@@ -20,11 +20,12 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   config :retries, :validate => :number, :default => 5
   config :default_application, :validate => :string, :default => 'UNKNOWN'
   config :concurrent_requests, :validate => :number, :default => 1
+  config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/v1/accounts/"
 
   public
 
   def register
-    @end_point = URI.parse "https://insights-collector.newrelic.com/v1/accounts/#{@account_id}/events".freeze
+    @end_point = URI.parse "#{@base_uri}#{@account_id}/events".freeze
     @header = {
         'X-Insert-Key' => @api_key.value,
         'Content-Encoding' => 'gzip'
@@ -43,23 +44,18 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   end
 
   def multi_receive(events)
-    puts Time.now
     payload = []
     events.each do |event|
       payload.push(encode(event))
     end
-    payload.each_slice([(payload.size / 2).to_i, 1000].min) do |chunk|
-      unless chunk.empty?
-        @semaphor.acquire()
-        @executor.submit do
-          io = StringIO.new
-          gzip = Zlib::GzipWriter.new(io)
-          gzip << chunk.to_json
-          gzip.close
-          attempt_send(io.string, 0)
-          @semaphor.release()
-        end
-      end
+    @semaphor.acquire()
+    @executor.submit do
+      io = StringIO.new
+      gzip = Zlib::GzipWriter.new(io)
+      gzip << payload.to_json
+      gzip.close
+      attempt_send(io.string, 0)
+      @semaphor.release()
     end
   end
 
@@ -73,13 +69,14 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   end
 
   def was_successful?(response)
-    puts response
     200 <= response.code.to_i && response.code.to_i < 300
   end
 
   def nr_send(payload)
-    http = Net::HTTP.new(@end_point.host)
+    http = Net::HTTP.new(@end_point.host, 443)
     request = Net::HTTP::Post.new(@end_point.request_uri)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     @header.each {|k, v| request[k] = v}
     request.body = payload
     http.request(request)
