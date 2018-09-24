@@ -49,7 +49,8 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
       payload.push(encode(event))
     end
     @semaphor.acquire()
-    @executor.submit do
+    execute = @executor.java_method :submit, [java.lang.Runnable]
+    execute.call do
       io = StringIO.new
       gzip = Zlib::GzipWriter.new(io)
       gzip << payload.to_json
