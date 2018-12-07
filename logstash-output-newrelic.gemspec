@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-newrelic'
-  s.version       = '0.1.3'
+  s.version       = '0.1.4'
   s.licenses      = ['Apache-2.0']
   s.summary       = 'Forwards logs as custom events to insights'
   s.description   = 'Gzips up to and decorates logstash events to be properly formatted as custom events'
