@@ -28,6 +28,7 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     @end_point = URI.parse "#{@base_uri}#{@account_id}/events".freeze
     @header = {
         'X-Insert-Key' => @api_key.value,
+        'X-Event-Source' => 'logs',
         'Content-Encoding' => 'gzip'
     }.freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
