@@ -25,7 +25,7 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   public
 
   def register
-    @end_point = URI.parse "#{@base_uri}#{@account_id}/events".freeze
+    @end_point = URI.parse(@base_uri)
     @header = {
         'X-Insert-Key' => @api_key.value,
         'X-Event-Source' => 'logs',
