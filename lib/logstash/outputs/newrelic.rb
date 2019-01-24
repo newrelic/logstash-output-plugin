@@ -37,10 +37,11 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
 
   def encode(event)
     event.set('messageId', java.util.UUID.randomUUID.toString)
-    unless event.get('@timestamp').nil?
-      event.set('timestamp', event.get('@timestamp').to_i);
-      event.remove('@timestamp')
+    unless event.get('@realtime_timestamp').nil?
+      event.set('timestamp', event.get('@realtime_timestamp').to_i);
+      event.remove('@realtime_timestamp')
     end
+    event.remove('@timestamp')
     event.set('eventType', event_type)
     event.to_hash
   end
