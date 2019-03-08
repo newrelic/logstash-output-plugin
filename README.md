@@ -1,86 +1,44 @@
-# Logstash Plugin
+# New Relic Logstash Output Plugin
 
-This is a plugin for [Logstash](https://github.com/elastic/logstash).
+This is a plugin for [Logstash](https://github.com/elastic/logstash) that outputs logs to New Relic.
 
-It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
-
-## Documentation
-
-Logstash provides infrastructure to automatically generate documentation for this plugin. We use the asciidoc format to write documentation so any comments in the source code will be first converted into asciidoc and then into html. All plugin documentation are placed under one [central location](http://www.elastic.co/guide/en/logstash/current/).
-
-- For formatting code or config example, you can use the asciidoc `[source,ruby]` directive
-- For more asciidoc formatting tips, see the excellent reference here https://github.com/elastic/docs#asciidoc-guide
-
-## Need Help?
-
-Need help? Try #logstash on freenode IRC or the https://discuss.elastic.co/c/logstash discussion forum.
-
-## Developing
-
-### 1. Plugin Developement and Testing
-
-#### Code
-- To get started, you'll need JRuby with the Bundler gem installed.
-
-- Create a new plugin or clone and existing from the GitHub [logstash-plugins](https://github.com/logstash-plugins) organization. We also provide [example plugins](https://github.com/logstash-plugins?query=example).
-
-- Install dependencies
-```sh
-bundle install
-```
-
-#### Test
-
-- Update your dependencies
+## Installation
 
 ```sh
-bundle install
+bin/logstash-plugin install logstash-output-newrelic.gem
 ```
 
-- Run tests
+## Configuration
 
-```sh
-bundle exec rspec
+### Add to Logstash
+
+Add the following block to your logstash.conf (with your specific account ID and API key), then restart Logstash.
+
+Example:
+```rb
+output {
+  newrelic {
+    account_id => "12345"
+    api_key => "k01bkEka882bkj21340ndfinsENatSQ9"
+  }
+}
 ```
 
-### 2. Running your unpublished Plugin in Logstash
+### Required plugin configuration
 
-#### 2.1 Run in a local Logstash clone
+| Property | Description |
+|---|---|
+| api_key | your New Relic API key |
+| account_id | your New Relic account ID |
 
-- Edit Logstash `Gemfile` and add the local plugin path, for example:
-```ruby
-gem "logstash-filter-awesome", :path => "/your/local/logstash-filter-awesome"
-```
-- Install plugin
-```sh
-bin/logstash-plugin install --no-verify
-```
-- Run Logstash with your plugin
-```sh
-bin/logstash -e 'filter {awesome {}}'
-```
-At this point any modifications to the plugin code will be applied to this local Logstash setup. After modifying the plugin, simply rerun Logstash.
+### Optional plugin configuration
 
-#### 2.2 Run in an installed Logstash
+| Property | Description | Default value |
+|---|---|---|
+| concurrent_requests | The number of threads to make requests from | 1 |
+| retries | The maximum number of times to retry a failed request, exponentially increasing delay between each retry | 5 |
+| retry_seconds | The inital delay between retries, in seconds | 5 |
+| max_delay | The maximum delay between retries, in seconds | 30 |
+| base_uri | New Relic ingestion endpoint | 'insights-collector.newrelic.com/logs/v1' |
+| event_type | The New Relic event type | 'log' |
 
-You can use the same **2.1** method to run your plugin in an installed Logstash by editing its `Gemfile` and pointing the `:path` to your local plugin development directory or you can build the gem and install it using:
-
-- Build your plugin gem
-```sh
-gem build logstash-filter-awesome.gemspec
-```
-- Install the plugin from the Logstash home
-```sh
-bin/logstash-plugin install /your/local/plugin/logstash-filter-awesome.gem
-```
-- Start Logstash and proceed to test the plugin
-
-## Contributing
-
-All contributions are welcome: ideas, patches, documentation, bug reports, complaints, and even something you drew up on a napkin.
-
-Programming is not a required skill. Whatever you've seen about open source and maintainers or community members  saying "send patches or die" - you will not see that here.
-
-It is more important to the community that you are able to contribute.
-
-For more information about contributing, see the [CONTRIBUTING](https://github.com/elastic/logstash/blob/master/CONTRIBUTING.md) file.

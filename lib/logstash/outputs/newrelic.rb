@@ -18,7 +18,6 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   config :max_delay, :validate => :number, :default => 30
   config :event_type, :validate => :string, :default => 'log'
   config :retries, :validate => :number, :default => 5
-  config :default_application, :validate => :string, :default => 'UNKNOWN'
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/v1/accounts/"
 
@@ -69,7 +68,7 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
 
   def attempt_send(payload, attempt)
     sleep [max_delay, retry_seconds ** attempt].min
-    attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload))
+    attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload)) || !should_retry(attempt)
   end
 
   def was_successful?(response)
