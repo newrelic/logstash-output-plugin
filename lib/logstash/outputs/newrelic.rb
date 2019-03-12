@@ -36,11 +36,6 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   end
 
   def encode(event)
-    event.set('messageId', java.util.UUID.randomUUID.toString)
-    unless event.get('@realtime_timestamp').nil?
-      event.set('timestamp', event.get('@realtime_timestamp').to_i);
-      event.remove('@realtime_timestamp')
-    end
     event.remove('@timestamp')
     event.set('eventType', event_type)
     event.to_hash
@@ -69,7 +64,7 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
 
   def attempt_send(payload, attempt)
     sleep [max_delay, retry_seconds ** attempt].min
-    attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload))
+    attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload)) if should_retry(attempt)
   end
 
   def was_successful?(response)
