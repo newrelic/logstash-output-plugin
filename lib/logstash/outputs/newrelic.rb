@@ -75,7 +75,7 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     http = Net::HTTP.new(@end_point.host, 443)
     request = Net::HTTP::Post.new(@end_point.request_uri)
     http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     @header.each {|k, v| request[k] = v}
     request.body = payload
     http.request(request)
