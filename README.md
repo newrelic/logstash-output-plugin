@@ -10,9 +10,8 @@ bin/logstash-plugin install logstash-output-newrelic.gem
 
 ## Configuration
 
-### Add to Logstash
-
 Add the following block to your logstash.conf (with your specific account ID and API key), then restart Logstash.
+There are other optional configuration properties, see below.
 
 Example:
 ```rb
@@ -42,3 +41,6 @@ output {
 | base_uri | New Relic ingestion endpoint | 'insights-collector.newrelic.com/logs/v1' |
 | event_type | The New Relic event type | 'log' |
 
+## Development 
+
+See [DEVELOPER.md](DEVELOPER.md)
