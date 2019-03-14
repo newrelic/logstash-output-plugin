@@ -1,12 +1,12 @@
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-newrelic'
-  s.version       = '0.2.2'
+  s.version       = '0.2.3'
   s.licenses      = ['Apache-2.0']
   s.summary       = 'Forwards logs as custom events to insights'
   s.description   = 'Gzips up to and decorates logstash events to be properly formatted as custom events'
   s.homepage      = 'https://source.datanerd.us/ifridge/logstash-output-newrelic'
-  s.authors       = ['Ian Fridge']
-  s.email         = 'ifridge@newrelic.com'
+  s.authors       = ['New Relic Logging Team']
+  s.email         = 'logging-team@newrelic.com'
   s.require_paths = ['lib']
 
   # Files
