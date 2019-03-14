@@ -8,9 +8,3 @@
 * Install dependencies: `bundle install`
 * Run tests: `bundle exec rspec`
 * Build: `gem build logstash-output-newrelic.gemspec`
-
-## Installation
-
-```sh
-bin/logstash-plugin install logstash-output-newrelic.gem
-```
