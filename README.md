@@ -5,7 +5,7 @@ This is a plugin for [Logstash](https://github.com/elastic/logstash) that output
 ## Installation
 
 ```sh
-bin/logstash-plugin install logstash-output-newrelic.gem
+logstash-plugin install logstash-output-newrelic-<VERSION_NUMBER>.gem
 ```
 
 ## Configuration
@@ -17,11 +17,15 @@ Example:
 ```rb
 output {
   newrelic {
-    account_id => "12345"
-    api_key => "k01bkEka882bkj21340ndfinsENatSQ9"
+    account_id => "<ACCOUNT_ID>"
+    api_key => "<API_INSERT_KEY>"
   }
 }
 ```
+
+Getting the API Insert Key:
+`https://staging-insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
+
 
 ### Required plugin configuration
 
