@@ -1,10 +1,8 @@
 # Developing the plugin
-
-**TODO: this needs to be fleshed out, make sure it works**
  
 * To get started, you'll need JRuby with the Bundler gem installed.
-  * `rbenv `
-  * `gem install bundle`
-* Install dependencies: `bundle install`
-* Run tests: `bundle exec rspec`
-* Build: `gem build logstash-output-newrelic.gemspec`
+  * `rbenv install jruby-9.2.5.0`
+  * `jruby -S gem install bundler`
+* Install dependencies: `jruby -S bundle install`
+* Run tests: `jruby -S bundle exec rspec`
+* Build: `jruby -S gem build logstash-output-newrelic.gemspec`

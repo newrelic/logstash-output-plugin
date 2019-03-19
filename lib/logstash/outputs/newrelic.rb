@@ -18,12 +18,17 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   config :max_delay, :validate => :number, :default => 30
   config :event_type, :validate => :string, :default => 'log'
   config :retries, :validate => :number, :default => 5
+  config :default_application, :validate => :string, :default => 'UNKNOWN'
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/v1/accounts/"
+
+  # TODO: do we need to define "concurrency"? https://www.elastic.co/guide/en/logstash/current/_how_to_write_a_logstash_output_plugin.html
 
   public
 
   def register
+    puts ">>> api_key=#{api_key.value}"
+    puts ">>> account_id=#{account_id}"
     @end_point = URI.parse(@base_uri)
     @header = {
         'X-Insert-Key' => @api_key.value,
@@ -34,9 +39,19 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
+  def shutdown
+    @executor&.shutdown
+  end
+
   def encode(event)
+    event.set('messageId', java.util.UUID.randomUUID.toString)
+    unless event.get('@realtime_timestamp').nil?
+      event.set('timestamp', event.get('@realtime_timestamp').to_i);
+      event.remove('@realtime_timestamp')
+    end
     event.remove('@timestamp')
     event.set('eventType', event_type)
+    puts ">>> event=#{event}"
     event.to_hash
   end
 
@@ -45,15 +60,20 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     events.each do |event|
       payload.push(encode(event))
     end
+    puts '>>> 1'
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
+      puts '>>> 1.5'
       io = StringIO.new
       gzip = Zlib::GzipWriter.new(io)
       gzip << payload.to_json
       gzip.close
+      puts '>>> 2'
       attempt_send(io.string, 0)
-      @semaphor.release()
+      puts '>>> 5'
+      @semaphor.release() # TODO: do this in a finally block?
+      puts '>>> 6'
     end
   end
 
@@ -62,11 +82,16 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   end
 
   def attempt_send(payload, attempt)
+    puts '>>> 3'
     sleep [max_delay, retry_seconds ** attempt].min
+    puts '>>> 4'
     attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload)) if should_retry?(attempt)
   end
 
   def was_successful?(response)
+    puts ">>> ..."
+    puts ">>> #{response}"
+    puts ">>> ..."
     200 <= response.code.to_i && response.code.to_i < 300
   end
 
