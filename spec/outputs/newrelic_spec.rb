@@ -31,15 +31,15 @@ describe LogStash::Outputs::Newrelic do
   context 'simple call' do
       it 'does not blow up' do
           stub_request(:any, base_uri).
-            to_return(body: "abc", status: 500)
+            to_return(status: 200)
 
           newrelic_output = LogStash::Plugin.lookup('output', 'newrelic')
                   .new(simple_config)
           newrelic_output.register
           newrelic_output.multi_receive([event])
           newrelic_output.shutdown
-          sleep 5
-          expect(a_request(:post, base_uri)).to have_been_made
+
+          wait_for(a_request(:post, base_uri)).to have_been_made
       end
   end
 end

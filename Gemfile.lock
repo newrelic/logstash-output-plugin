@@ -141,6 +141,7 @@ PLATFORMS
 DEPENDENCIES
   logstash-devutils
   logstash-output-newrelic!
+  rspec-wait
   webmock
 
 BUNDLED WITH
