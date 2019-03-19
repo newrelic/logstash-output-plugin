@@ -17,12 +17,6 @@ describe LogStash::Outputs::Newrelic do
       'base_uri' => base_uri
     }
   }
-  let (:event) {
-    LogStash::Event.new(
-    {
-      'message' => 'Test message - Brian456789098999'
-    })
-   }
 
    before { 
      @newrelic_output = LogStash::Plugin.lookup('output', 'newrelic').new(simple_config)
@@ -38,6 +32,7 @@ describe LogStash::Outputs::Newrelic do
           stub_request(:any, base_uri).
             to_return(status: 200)
 
+          event = LogStash::Event.new({'message' => 'Test message'})
           @newrelic_output.multi_receive([event])
 
           wait_for(a_request(:post, base_uri)).to have_been_made
