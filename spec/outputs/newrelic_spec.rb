@@ -5,13 +5,11 @@ require "logstash/codecs/plain"
 require "logstash/event"
 require "webmock/rspec"
 
-
 describe LogStash::Outputs::Newrelic do
 
-  let (:api_key) { 'lH7pIMEpl5oCbNs8g1jTN4VllAITqtxQ' }
-  let (:account_id) { '756053' }
-  let (:base_uri) { 'https://testing-insights-collector.newrelic.com' }
-
+  let (:api_key) { 'someAccountKey' }
+  let (:account_id) { '123' }
+  let (:base_uri) { 'https://testing-example-collector.com' }
   let (:simple_config) {
     {
       'api_key' => api_key,
@@ -19,8 +17,6 @@ describe LogStash::Outputs::Newrelic do
       'base_uri' => base_uri
     }
   }
-
-
   let (:event) {
     LogStash::Event.new(
     {
@@ -28,16 +24,21 @@ describe LogStash::Outputs::Newrelic do
     })
    }
 
-  context 'simple call' do
-      it 'does not blow up' do
+   before { 
+     @newrelic_output = LogStash::Plugin.lookup('output', 'newrelic').new(simple_config)
+     @newrelic_output.register
+   }
+
+   after { 
+     @newrelic_output&.shutdown
+   }
+
+  context 'simple event' do
+      it 'makes POST call to collector' do
           stub_request(:any, base_uri).
             to_return(status: 200)
 
-          newrelic_output = LogStash::Plugin.lookup('output', 'newrelic')
-                  .new(simple_config)
-          newrelic_output.register
-          newrelic_output.multi_receive([event])
-          newrelic_output.shutdown
+          @newrelic_output.multi_receive([event])
 
           wait_for(a_request(:post, base_uri)).to have_been_made
       end
