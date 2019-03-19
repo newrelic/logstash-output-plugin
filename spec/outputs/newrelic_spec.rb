@@ -46,10 +46,24 @@ describe LogStash::Outputs::Newrelic do
     end
   end
 
-  context "single event" do
+  context "request headers" do
+    it "all present" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ "message" => "Test message" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri).with(
+        headers: {
+          'X-Insert-Key' => api_key,
+          'X-Event-Source' => 'logs',
+          'Content-Encoding' => 'gzip'})).to have_been_made
+    end
+  end
+
+  context "request body" do
     it "makes POST call to collector" do
-      stub_request(:any, base_uri).
-        to_return(status: 200)
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ "message" => "Test message" })
       @newrelic_output.multi_receive([event])
@@ -60,8 +74,7 @@ describe LogStash::Outputs::Newrelic do
 
   context "multiple events" do
     it "makes POST call to collector" do
-      stub_request(:any, base_uri).
-        to_return(status: 200)
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event1 = LogStash::Event.new({ "message" => "Test message 1" })
       event2 = LogStash::Event.new({ "message" => "Test message 2" })
