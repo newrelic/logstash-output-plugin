@@ -81,9 +81,14 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     attempt < retries
   end
 
+  def sleep_duration(attempt) 
+    [max_delay, (2 ** attempt) * retry_seconds].min
+  end
+
   def attempt_send(payload, attempt)
     puts '>>> 3'
-    sleep [max_delay, retry_seconds ** attempt].min
+    puts ">>> Sleeping for #{sleep_duration(attempt)} seconds"
+    sleep sleep_duration(attempt)
     puts '>>> 4'
     attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload)) if should_retry?(attempt)
   end
