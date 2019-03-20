@@ -1,13 +1,35 @@
 # Developing the plugin
  
-* To get started, you'll need JRuby with the Bundler gem installed.
-  * `rbenv install jruby-9.2.5.0`
-  * `jruby -S gem install bundler`
+# Getting started
+
+* Install JRuby: `rbenv install jruby-9.2.5.0`
+* Install Bundler gem: `jruby -S gem install bundler`
+
+# Developing
+
 * Install dependencies: `jruby -S bundle install`
+* Write tests and production code!
+* Bump version: edit version field in `logstash-output-newrelic.gemspec`
 * Run tests: `jruby -S bundle exec rspec`
-* Build: `jruby -S gem build logstash-output-newrelic.gemspec`
-* Push code to Gemfury:
-  * `git remote add fury https://<your-gemfury-username>@git.fury.io/nrsf/logstash-output-newrelic.git`
-  * `git push fury master`
-  * For the password, use the "Personal full access token" seen here https://manage.fury.io/manage/newrelic/tokens/shared
-  * TODO: should this be part of the build step in Jenkins?
+* Build the gem: `jruby -S gem build logstash-output-newrelic.gemspec`
+
+# Testing it with a local Logstash install
+
+* Remove previous version: `logstash-plugin remove logstash-output-newrelic`
+* Add new version: `logstash-plugin install logstash-output-newrelic-<version>.gem `
+* Restart logstash: For Homebrew: `brew services restart logstash`
+* Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
+* Look in `https://wanda-ui.staging-service.newrelic.com/launcher/logger.log-launcher` for your log message
+
+# Deploying to Gemfury
+
+After merging to master you must also push the code to Gemfury, which is where customers will get our gem from.
+* Get the version you just merged to master in Github
+  * `git checkout master`
+  * `git pull`
+* Push the new master to Gemfury
+   * Add Gemfury as remote (only needs to be done once): `git remote add fury https://<your-gemfury-username>@git.fury.io/nrsf/logstash-output-newrelic.git`
+   * Push the new commits to Gemfury: `git push fury master`
+   * For the password, use the "Personal full access token" seen here https://manage.fury.io/manage/newrelic/tokens/shared
+   * Make sure you see your new code show up here: `https://manage.fury.io/dashboard/nrsf`
+   * TODO: should this be part of the build step in Jenkins?
