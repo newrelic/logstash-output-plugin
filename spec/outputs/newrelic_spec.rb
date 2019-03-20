@@ -84,7 +84,7 @@ describe LogStash::Outputs::Newrelic do
   end
 
   context "request body" do
-    
+
     # TODO: why is this field always removed?
     it "'@timestamp' field is removed" do
       stub_request(:any, base_uri).to_return(status: 200)
@@ -136,6 +136,8 @@ describe LogStash::Outputs::Newrelic do
       specific_config["max_delay"] = 60
       specific_config["retry_seconds"] = 5
 
+      # Create a new plugin with this specific config that has longer retry sleep
+      # configuration than we normally want
       @newrelic_output&.shutdown
       @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(specific_config)
       @newrelic_output.register
