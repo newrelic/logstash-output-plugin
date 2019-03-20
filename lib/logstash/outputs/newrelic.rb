@@ -27,8 +27,6 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   public
 
   def register
-    puts ">>> api_key=#{api_key.value}"
-    puts ">>> account_id=#{account_id}"
     @end_point = URI.parse(@base_uri)
     @header = {
         'X-Insert-Key' => @api_key.value,
@@ -51,7 +49,6 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     end
     event.remove('@timestamp')
     event.set('eventType', event_type)
-    puts ">>> event=#{event}"
     event.to_hash
   end
 
@@ -60,23 +57,17 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     events.each do |event|
       payload.push(encode(event))
     end
-    puts '>>> 1'
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
-      begin
-        puts '>>> 1.5'
+      begin=
         io = StringIO.new
         gzip = Zlib::GzipWriter.new(io)
         gzip << payload.to_json
         gzip.close
-        puts '>>> 2'
         attempt_send(io.string, 0)
-        puts '>>> 5'
       ensure
-        puts '>>> 5.5'
         @semaphor.release()
-        puts '>>> 6'
       end
     end
   end
@@ -90,17 +81,11 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   end
 
   def attempt_send(payload, attempt)
-    puts '>>> 3'
-    puts ">>> Sleeping for #{sleep_duration(attempt)} seconds"
     sleep sleep_duration(attempt)
-    puts '>>> 4'
     attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload)) if should_retry?(attempt)
   end
 
   def was_successful?(response)
-    puts ">>> ..."
-    puts ">>> #{response}"
-    puts ">>> ..."
     200 <= response.code.to_i && response.code.to_i < 300
   end
 
