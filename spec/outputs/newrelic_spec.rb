@@ -8,7 +8,6 @@ require "zlib"
 
 describe LogStash::Outputs::Newrelic do
   let (:api_key) { "someAccountKey" }
-  let (:account_id) { "123" }
   let (:base_uri) { "https://testing-example-collector.com" }
   let (:retry_seconds) { 0 }
   # Don't sleep in tests, to keep tests fast. We have a test for the method that produces the sleep duration between retries.
@@ -17,7 +16,6 @@ describe LogStash::Outputs::Newrelic do
   let (:simple_config) {
     {
       "api_key" => api_key,
-      "account_id" => account_id,
       "base_uri" => base_uri,
       "retries" => retries,
       "retry_seconds" => retry_seconds,
@@ -52,18 +50,9 @@ describe LogStash::Outputs::Newrelic do
   context "validation of config" do
     it "requires api_key" do
       no_api_key_config = {
-        "account_id" => account_id,
       }
 
       expect { LogStash::Plugin.lookup("output", "newrelic").new(no_api_key_config) }.to raise_error LogStash::ConfigurationError
-    end
-
-    it "requires account_id" do
-      no_account_id_config = {
-        "api_key" => api_key,
-      }
-
-      expect { LogStash::Plugin.lookup("output", "newrelic").new(no_account_id_config) }.to raise_error LogStash::ConfigurationError
     end
   end
 

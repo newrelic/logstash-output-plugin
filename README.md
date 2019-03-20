@@ -10,14 +10,13 @@ logstash-plugin install logstash-output-newrelic-<VERSION_NUMBER>.gem
 
 ## Configuration
 
-Add the following block to your logstash.conf (with your specific account ID and API key), then restart Logstash.
+Add the following block to your logstash.conf (with your specific API Insert key), then restart Logstash.
 There are other optional configuration properties, see below.
 
 Example:
 ```rb
 output {
   newrelic {
-    account_id => "<ACCOUNT_ID>"
     api_key => "<API_INSERT_KEY>"
   }
 }
@@ -31,8 +30,7 @@ Getting the API Insert Key:
 
 | Property | Description |
 |---|---|
-| api_key | your New Relic API key |
-| account_id | your New Relic account ID |
+| api_key | your New Relic API Insert key |
 
 ### Optional plugin configuration
 
