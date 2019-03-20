@@ -4,9 +4,8 @@ This is a plugin for [Logstash](https://github.com/elastic/logstash) that output
 
 ## Installation
 
-```sh
-logstash-plugin install logstash-output-newrelic-<VERSION_NUMBER>.gem
-```
+* Add the following at the bottom of Logstash's Gemfile (located in the root of the Logstash install): `gem "logstash-output-newrelic-internal", :source => "https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf"`
+* Install the plugin: `logstash-plugin install --no-verify https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf/logstash-output-newrelic-internal`
 
 ## Configuration
 
@@ -23,7 +22,7 @@ output {
 ```
 
 Getting the API Insert Key:
-`https://staging-insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
+`https://insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
 
 
 ### Required plugin configuration
@@ -43,6 +42,20 @@ Getting the API Insert Key:
 | base_uri | New Relic ingestion endpoint | 'insights-collector.newrelic.com/logs/v1' |
 | event_type | The New Relic event type | 'log' |
 
+## Testing 
+
+An easy way to test the plugin is to make sure Logstash is getting input from a log file you can write to. Something like this in your logstash.conf:
+```
+input {
+  file {
+    path => "/path/to/your/log/file"
+  }
+}
+```
+* Restart Logstash
+* Append a test log message to your log file: `echo "test message" >> /path/to/your/log/file`
+* Search New Relic Logs for `"test message"`
+  
 ## Development 
 
 See [DEVELOPER.md](DEVELOPER.md)
