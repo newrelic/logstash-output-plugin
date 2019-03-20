@@ -64,16 +64,20 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
-      puts '>>> 1.5'
-      io = StringIO.new
-      gzip = Zlib::GzipWriter.new(io)
-      gzip << payload.to_json
-      gzip.close
-      puts '>>> 2'
-      attempt_send(io.string, 0)
-      puts '>>> 5'
-      @semaphor.release() # TODO: do this in a finally block?
-      puts '>>> 6'
+      begin
+        puts '>>> 1.5'
+        io = StringIO.new
+        gzip = Zlib::GzipWriter.new(io)
+        gzip << payload.to_json
+        gzip.close
+        puts '>>> 2'
+        attempt_send(io.string, 0)
+        puts '>>> 5'
+      ensure
+        puts '>>> 5.5'
+        @semaphor.release()
+        puts '>>> 6'
+      end
     end
   end
 

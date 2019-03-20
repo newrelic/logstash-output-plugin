@@ -209,4 +209,21 @@ describe LogStash::Outputs::Newrelic do
       wait_for(a_request(:post, base_uri)).to have_been_made.times(retries) 
     end
   end
+
+  context "error handling" do
+    it "continues through errors, future calls should still succeed" do
+      stub_request(:any, base_uri)
+        .to_raise(StandardError.new("from test"))
+        .to_return(status: 200)
+
+      event1 = LogStash::Event.new({ "message" => "Test message 1" })
+      event2 = LogStash::Event.new({ "message" => "Test message 2" })
+      @newrelic_output.multi_receive([event1])
+      @newrelic_output.multi_receive([event2])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 2' })
+        .to have_been_made
+    end
+  end
 end
