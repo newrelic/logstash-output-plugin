@@ -21,6 +21,8 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/v1/accounts/"
 
+  # TODO: do we need to define "concurrency"? https://www.elastic.co/guide/en/logstash/current/_how_to_write_a_logstash_output_plugin.html
+
   public
 
   def register
@@ -32,6 +34,11 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     }.freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
+  end
+
+  # Used by tests so that the test run can complete (background threads prevent JVM exit)
+  def shutdown
+    @executor&.shutdown
   end
 
   def encode(event)
@@ -48,12 +55,15 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
-      io = StringIO.new
-      gzip = Zlib::GzipWriter.new(io)
-      gzip << payload.to_json
-      gzip.close
-      attempt_send(io.string, 0)
-      @semaphor.release()
+      begin
+        io = StringIO.new
+        gzip = Zlib::GzipWriter.new(io)
+        gzip << payload.to_json
+        gzip.close
+        attempt_send(io.string, 0)
+      ensure
+        @semaphor.release()
+      end
     end
   end
 
@@ -61,8 +71,12 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     attempt < retries
   end
 
+  def sleep_duration(attempt) 
+    [max_delay, (2 ** attempt) * retry_seconds].min
+  end
+
   def attempt_send(payload, attempt)
-    sleep [max_delay, retry_seconds ** attempt].min
+    sleep sleep_duration(attempt)
     attempt_send(payload, attempt + 1) unless was_successful?(nr_send(payload)) if should_retry?(attempt)
   end
 

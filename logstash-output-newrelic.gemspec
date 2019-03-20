@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-newrelic'
-  s.version       = '0.2.4'
+  s.version       = '0.2.5'
   s.licenses      = ['Apache-2.0']
   s.summary       = 'Forwards logs as custom events to insights'
   s.description   = 'Gzips up to and decorates logstash events to be properly formatted as custom events'
@@ -21,4 +21,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
   s.add_runtime_dependency "logstash-codec-plain"
   s.add_development_dependency "logstash-devutils"
+  s.add_development_dependency "webmock"
+  s.add_development_dependency "rspec-wait"
+  
 end
