@@ -84,32 +84,7 @@ describe LogStash::Outputs::Newrelic do
   end
 
   context "request body" do
-
-    it "'messageId' field is added" do
-      stub_request(:any, base_uri).to_return(status: 200)
-
-      event = LogStash::Event.new({ :message => "Test message" })
-      @newrelic_output.multi_receive([event])
-
-      wait_for(a_request(:post, base_uri)
-        .with { |request| single_gzipped_message(request.body)['messageId'] != nil })
-        .to have_been_made
-    end
-
-    it "'@realtime_timestamp' field is set to 'timestamp', and original field removed" do
-      stub_request(:any, base_uri).to_return(status: 200)
-
-      event = LogStash::Event.new({ :message => "Test message", :@realtime_timestamp => '123' })
-      @newrelic_output.multi_receive([event])
-
-      wait_for(a_request(:post, base_uri)
-        .with { |request| 
-          message = single_gzipped_message(request.body)
-          message['timestamp'] == 123 &&
-          message['@realtime_timestamp'] == nil })
-        .to have_been_made
-    end
-
+    
     # TODO: why is this field always removed?
     it "'@timestamp' field is removed" do
       stub_request(:any, base_uri).to_return(status: 200)

@@ -18,7 +18,6 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   config :max_delay, :validate => :number, :default => 30
   config :event_type, :validate => :string, :default => 'log'
   config :retries, :validate => :number, :default => 5
-  config :default_application, :validate => :string, :default => 'UNKNOWN'
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/v1/accounts/"
 
@@ -37,16 +36,12 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
+  # Used by tests so that the test run can complete (background threads prevent JVM exit)
   def shutdown
     @executor&.shutdown
   end
 
   def encode(event)
-    event.set('messageId', java.util.UUID.randomUUID.toString)
-    unless event.get('@realtime_timestamp').nil?
-      event.set('timestamp', event.get('@realtime_timestamp').to_i);
-      event.remove('@realtime_timestamp')
-    end
     event.remove('@timestamp')
     event.set('eventType', event_type)
     event.to_hash
@@ -60,7 +55,7 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
-      begin=
+      begin
         io = StringIO.new
         gzip = Zlib::GzipWriter.new(io)
         gzip << payload.to_json

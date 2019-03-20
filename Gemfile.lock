@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    logstash-output-newrelic (0.2.4)
+    logstash-output-newrelic (0.2.5)
       logstash-codec-plain
       logstash-core-plugin-api (~> 2.0)
 
