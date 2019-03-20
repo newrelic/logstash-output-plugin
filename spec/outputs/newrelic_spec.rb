@@ -30,6 +30,12 @@ describe LogStash::Outputs::Newrelic do
     gz.read
   end
 
+  def single_gzipped_message(body)
+    message = JSON.parse(gunzip(body))
+    expect(message.length).to equal(1)
+    message[0] 
+  end
+
   before(:each) do
     @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
     @newrelic_output.register
@@ -73,47 +79,82 @@ describe LogStash::Outputs::Newrelic do
     end
   end
 
-  ###########################################################################
-  # Doesn't  currently work -- need to use hash_including
-  ###########################################################################
+  context "request body" do
+
+    it "'messageId' field is added" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => "Test message" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| single_gzipped_message(request.body)['messageId'] != nil })
+        .to have_been_made
+    end
+
+    it "'@realtime_timestamp' field is set to 'timestamp', and original field removed" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => "Test message", :@realtime_timestamp => '123' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['timestamp'] == 123 &&
+          message['@realtime_timestamp'] == nil })
+        .to have_been_made
+    end
+
+    # TODO: why is this field always removed?
+    it "'@timestamp' field is removed" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => "Test message", :@timestamp => '123' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| single_gzipped_message(request.body)['@timestamp'] == nil })
+        .to have_been_made
+    end
+
+    it "all other fields passed through as is" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => "Test message", :other => "Other value" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['message'] == 'Test message' &&
+          message['other'] == 'Other value' })
+        .to have_been_made
+    end
+  end
+
   # context "request body" do
-  #   it "single event with 'message' field" do
+  #   it "makes POST call to collector" do
   #     stub_request(:any, base_uri).to_return(status: 200)
 
-  #     event = LogStash::Event.new({ :message => "Test message" })
+  #     event = LogStash::Event.new({ "message" => "Test message" })
   #     @newrelic_output.multi_receive([event])
 
-  #     wait_for(a_request(:post, base_uri)
-  #       .with { |req|
-  #       # puts gunzip(req.body)
-  #       # puts JSON.parse(gunzip(req.body))
-  #       JSON.parse(gunzip(req.body)) == { :message => "Test message" }
-  #     }).to have_been_made
+  #     wait_for(a_request(:post, base_uri)).to have_been_made
   #   end
   # end
 
-  context "request body" do
-    it "makes POST call to collector" do
-      stub_request(:any, base_uri).to_return(status: 200)
+  # context "multiple events" do
+  #   it "makes POST call to collector" do
+  #     stub_request(:any, base_uri).to_return(status: 200)
 
-      event = LogStash::Event.new({ "message" => "Test message" })
-      @newrelic_output.multi_receive([event])
+  #     event1 = LogStash::Event.new({ "message" => "Test message 1" })
+  #     event2 = LogStash::Event.new({ "message" => "Test message 2" })
+  #     @newrelic_output.multi_receive([event1, event2])
 
-      wait_for(a_request(:post, base_uri)).to have_been_made
-    end
-  end
-
-  context "multiple events" do
-    it "makes POST call to collector" do
-      stub_request(:any, base_uri).to_return(status: 200)
-
-      event1 = LogStash::Event.new({ "message" => "Test message 1" })
-      event2 = LogStash::Event.new({ "message" => "Test message 2" })
-      @newrelic_output.multi_receive([event1, event2])
-
-      wait_for(a_request(:post, base_uri)).to have_been_made
-    end
-  end
+  #     wait_for(a_request(:post, base_uri)).to have_been_made
+  #   end
+  # end
 
   context "retry" do
     it "sleep periods double each time up to max time" do
