@@ -36,6 +36,10 @@ describe LogStash::Outputs::Newrelic do
     message[0] 
   end
 
+  def multiple_gzipped_messages(body)
+    JSON.parse(gunzip(body))
+  end
+
   before(:each) do
     @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
     @newrelic_output.register
@@ -131,30 +135,23 @@ describe LogStash::Outputs::Newrelic do
           message['other'] == 'Other value' })
         .to have_been_made
     end
+
+    it "multiple events" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event1 = LogStash::Event.new({ "message" => "Test message 1" })
+      event2 = LogStash::Event.new({ "message" => "Test message 2" })
+      @newrelic_output.multi_receive([event1, event2])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          messages = multiple_gzipped_messages(request.body)
+          messages.length == 2 &&
+          messages[0]['message'] == 'Test message 1' &&
+          messages[1]['message'] == 'Test message 2' })
+        .to have_been_made
+    end
   end
-
-  # context "request body" do
-  #   it "makes POST call to collector" do
-  #     stub_request(:any, base_uri).to_return(status: 200)
-
-  #     event = LogStash::Event.new({ "message" => "Test message" })
-  #     @newrelic_output.multi_receive([event])
-
-  #     wait_for(a_request(:post, base_uri)).to have_been_made
-  #   end
-  # end
-
-  # context "multiple events" do
-  #   it "makes POST call to collector" do
-  #     stub_request(:any, base_uri).to_return(status: 200)
-
-  #     event1 = LogStash::Event.new({ "message" => "Test message 1" })
-  #     event2 = LogStash::Event.new({ "message" => "Test message 2" })
-  #     @newrelic_output.multi_receive([event1, event2])
-
-  #     wait_for(a_request(:post, base_uri)).to have_been_made
-  #   end
-  # end
 
   context "retry" do
     it "sleep periods double each time up to max time" do
