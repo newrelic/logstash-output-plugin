@@ -13,7 +13,6 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
   config_name "newrelic"
 
   config :api_key, :validate => :password, :required => true
-  config :account_id, :validate => :string, :required => true
   config :retry_seconds, :validate => :number, :default => 5
   config :max_delay, :validate => :number, :default => 30
   config :event_type, :validate => :string, :default => 'log'
