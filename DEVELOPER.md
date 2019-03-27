@@ -15,7 +15,6 @@
 
 # Testing it with a local Logstash install
 * Remove previous version: `logstash-plugin remove logstash-output-newrelic-internal`
-
 * Add new version: `logstash-plugin install logstash-output-newrelic-internal-<version>.gem `
 * Restart logstash: For Homebrew: `brew services restart logstash`
 * Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
