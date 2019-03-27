@@ -2,6 +2,7 @@
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash) that outputs logs to New Relic.
 
+
 ## Installation
 
 * Add the following at the bottom of Logstash's Gemfile (located in the root of the Logstash install): `gem "logstash-output-newrelic-internal", :source => "https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf"`
