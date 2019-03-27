@@ -15,7 +15,7 @@ There are other optional configuration properties, see below.
 Example:
 ```rb
 output {
-  newrelic {
+  newrelic_internal {
     api_key => "<API_INSERT_KEY>"
   }
 }
