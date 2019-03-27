@@ -9,14 +9,13 @@
 
 * Install dependencies: `jruby -S bundle install`
 * Write tests and production code!
-* Bump version: edit version field in `logstash-output-newrelic.gemspec`
+* Bump version: edit version field in `logstash-output-newrelic-internal.gemspec`
 * Run tests: `jruby -S bundle exec rspec`
-* Build the gem: `jruby -S gem build logstash-output-newrelic.gemspec`
+* Build the gem: `jruby -S gem build logstash-output-newrelic-internal.gemspec`
 
 # Testing it with a local Logstash install
-
-* Remove previous version: `logstash-plugin remove logstash-output-newrelic`
-* Add new version: `logstash-plugin install logstash-output-newrelic-<version>.gem `
+* Remove previous version: `logstash-plugin remove logstash-output-newrelic-internal`
+* Add new version: `logstash-plugin install logstash-output-newrelic-internal-<version>.gem `
 * Restart logstash: For Homebrew: `brew services restart logstash`
 * Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
 * Look in `https://wanda-ui.staging-service.newrelic.com/launcher/logger.log-launcher` for your log message

@@ -1,12 +1,12 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/newrelic"
+require "logstash/outputs/newrelic_internal"
 require "logstash/codecs/plain"
 require "logstash/event"
 require "webmock/rspec"
 require "zlib"
 
-describe LogStash::Outputs::Newrelic do
+describe LogStash::Outputs::NewRelicInternal do
   let (:api_key) { "someAccountKey" }
   let (:base_uri) { "https://testing-example-collector.com" }
   let (:retry_seconds) { 0 }
@@ -39,7 +39,7 @@ describe LogStash::Outputs::Newrelic do
   end
 
   before(:each) do
-    @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
+    @newrelic_output = LogStash::Plugin.lookup("output", "newrelic_internal").new(simple_config)
     @newrelic_output.register
   end
 
@@ -52,7 +52,7 @@ describe LogStash::Outputs::Newrelic do
       no_api_key_config = {
       }
 
-      expect { LogStash::Plugin.lookup("output", "newrelic").new(no_api_key_config) }.to raise_error LogStash::ConfigurationError
+      expect { LogStash::Plugin.lookup("output", "newrelic_internal").new(no_api_key_config) }.to raise_error LogStash::ConfigurationError
     end
   end
 
@@ -128,7 +128,7 @@ describe LogStash::Outputs::Newrelic do
       # Create a new plugin with this specific config that has longer retry sleep
       # configuration than we normally want
       @newrelic_output&.shutdown
-      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(specific_config)
+      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic_internal").new(specific_config)
       @newrelic_output.register
       
       expect(@newrelic_output.sleep_duration(0)).to equal(5)

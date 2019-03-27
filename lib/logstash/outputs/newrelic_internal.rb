@@ -6,11 +6,11 @@ require 'zlib'
 require 'json'
 require 'java'
 
-class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
+class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
   java_import java.util.concurrent.Semaphore;
 
-  config_name "newrelic"
+  config_name "newrelic_internal"
 
   config :api_key, :validate => :password, :required => true
   config :retry_seconds, :validate => :number, :default => 5
@@ -92,4 +92,4 @@ class LogStash::Outputs::Newrelic < LogStash::Outputs::Base
     request.body = payload
     http.request(request)
   end
-end # class LogStash::Outputs::Newrelic
+end # class LogStash::Outputs::NewRelicInternal
