@@ -5,7 +5,9 @@ This is a plugin for [Logstash](https://github.com/elastic/logstash) that output
 
 ## Installation
 
-* Add the following at the bottom of Logstash's Gemfile (located in the root of the Logstash install): `gem "logstash-output-newrelic-internal", :source => "https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf"`
+* Tell Logstash where to find our plugin
+  * Find the Logstash Gemfile (For example: `/usr/share/logstash/Gemfile` in some Linux installs)
+  * Add the following to the top of Logstash's Gemfile: `source "https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf"`
 * Install the plugin: `logstash-plugin install --no-verify logstash-output-newrelic-internal`
 
 ## Configuration
