@@ -26,7 +26,7 @@
 `logstash-plugin` will happily take our plugin from its 
 local gem cache, ignoring our Gemfury source. So before testing install from Gemfury, you should clean the cache after
 removing the previous plugin version (see above):
-* Remove cached versions `find /usr/local/Cellar/logstash/6.6.1/libexec/vendor -name \*newrelic\* | xargs rm -r`
+* Remove cached versions. From Logstash's vendor directory: `find . -name \*newrelic\*`. Delete the appropriate files.
 * Follow the instructions in the README for installing from Gemfury
 
 # Deploying to Gemfury
