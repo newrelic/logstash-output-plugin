@@ -14,11 +14,20 @@
 * Build the gem: `jruby -S gem build logstash-output-newrelic-internal.gemspec`
 
 # Testing it with a local Logstash install
+
 * Remove previous version: `logstash-plugin remove logstash-output-newrelic-internal`
 * Add new version: `logstash-plugin install logstash-output-newrelic-internal-<version>.gem `
 * Restart logstash: For Homebrew: `brew services restart logstash`
 * Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
 * Look in `https://wanda-ui.staging-service.newrelic.com/launcher/logger.log-launcher` for your log message
+
+# Testing it from Gemfury
+
+`logstash-plugin` will happily take our plugin from its 
+local gem cache, ignoring our Gemfury source. So before testing install from Gemfury, you should clean the cache after
+removing the previous plugin version (see above):
+* Remove cached versions. From Logstash's vendor directory: `find . -name \*newrelic\*`. Delete the appropriate files.
+* Follow the instructions in the README for installing from Gemfury
 
 # Deploying to Gemfury
 
