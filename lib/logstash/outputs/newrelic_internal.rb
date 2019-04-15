@@ -15,7 +15,6 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   config :api_key, :validate => :password, :required => true
   config :retry_seconds, :validate => :number, :default => 5
   config :max_delay, :validate => :number, :default => 30
-  config :event_type, :validate => :string, :default => 'log'
   config :retries, :validate => :number, :default => 5
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/logs/v1"
@@ -42,7 +41,6 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
 
   def encode(event)
     event.remove('@timestamp')
-    event.set('eventType', event_type)
     event.to_hash
   end
 
