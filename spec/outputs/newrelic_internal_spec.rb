@@ -1,12 +1,11 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/newrelic_internal"
+require "logstash/outputs/newrelic_internal_version/version"
 require "logstash/codecs/plain"
 require "logstash/event"
 require "webmock/rspec"
 require "zlib"
-
-$plugin_version = File.read(File.expand_path("../../../VERSION", __FILE__)).strip
 
 describe LogStash::Outputs::NewRelicInternal do
   let (:api_key) { "someAccountKey" }
@@ -86,7 +85,7 @@ describe LogStash::Outputs::NewRelicInternal do
       .with { |request| 
         message = single_gzipped_message(request.body)
         message['plugin']['type'] == 'logstash' &&
-        message['plugin']['version'] == $plugin_version })
+        message['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
       .to have_been_made
     end
 
