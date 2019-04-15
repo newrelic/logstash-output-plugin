@@ -40,6 +40,10 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   end
 
   def encode(event)
+    event.set('plugin', {
+      'type' => 'logstash',
+      'version' => '0.2.9'
+    })
     event.remove('@timestamp')
     event.to_hash
   end
