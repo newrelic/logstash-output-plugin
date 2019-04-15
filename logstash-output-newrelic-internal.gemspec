@@ -1,6 +1,8 @@
+plugin_version = File.read(File.expand_path("../VERSION", __FILE__)).strip
+
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-newrelic-internal'
-  s.version       = '0.2.9'
+  s.version       = plugin_version
   s.licenses      = ['Apache-2.0']
   s.summary       = 'Forwards logs as custom events to insights'
   s.description   = 'Gzips up to and decorates logstash events to be properly formatted as custom events'

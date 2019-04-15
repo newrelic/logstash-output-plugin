@@ -1,4 +1,6 @@
 # encoding: utf-8
+$plugin_version = File.read(File.expand_path("../../../../VERSION", __FILE__)).strip
+
 require "logstash/outputs/base"
 require 'net/http'
 require 'uri'
@@ -42,7 +44,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   def encode(event)
     event.set('plugin', {
       'type' => 'logstash',
-      'version' => '0.2.9'
+      'version' => $plugin_version
     })
     event.remove('@timestamp')
     event.to_hash

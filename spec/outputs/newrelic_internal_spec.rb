@@ -6,6 +6,8 @@ require "logstash/event"
 require "webmock/rspec"
 require "zlib"
 
+$plugin_version = File.read(File.expand_path("../../../VERSION", __FILE__)).strip
+
 describe LogStash::Outputs::NewRelicInternal do
   let (:api_key) { "someAccountKey" }
   let (:base_uri) { "https://testing-example-collector.com" }
@@ -73,6 +75,20 @@ describe LogStash::Outputs::NewRelicInternal do
   end
 
   context "request body" do
+
+    it "message contains plugin information" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => "Test message", :@timestamp => '123' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+      .with { |request| 
+        message = single_gzipped_message(request.body)
+        message['plugin']['type'] == 'logstash' &&
+        message['plugin']['version'] == $plugin_version })
+      .to have_been_made
+    end
 
     # TODO: why is this field always removed?
     it "'@timestamp' field is removed" do
