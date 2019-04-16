@@ -9,7 +9,7 @@
 
 * Install dependencies: `jruby -S bundle install`
 * Write tests and production code!
-* Bump version: edit version field in `logstash-output-newrelic-internal.gemspec`
+* Bump version: edit version file `version.rb`
 * Run tests: `jruby -S bundle exec rspec`
 * Build the gem: `jruby -S gem build logstash-output-newrelic-internal.gemspec`
 

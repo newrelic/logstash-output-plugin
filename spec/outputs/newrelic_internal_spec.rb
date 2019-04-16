@@ -1,6 +1,7 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/outputs/newrelic_internal"
+require "logstash/outputs/newrelic_internal_version/version"
 require "logstash/codecs/plain"
 require "logstash/event"
 require "webmock/rspec"
@@ -73,6 +74,20 @@ describe LogStash::Outputs::NewRelicInternal do
   end
 
   context "request body" do
+
+    it "message contains plugin information" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => "Test message", :@timestamp => '123' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+      .with { |request| 
+        message = single_gzipped_message(request.body)
+        message['plugin']['type'] == 'logstash' &&
+        message['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
+      .to have_been_made
+    end
 
     # TODO: why is this field always removed?
     it "'@timestamp' field is removed" do

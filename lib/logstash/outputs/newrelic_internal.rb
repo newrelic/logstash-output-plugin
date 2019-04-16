@@ -1,5 +1,6 @@
 # encoding: utf-8
 require "logstash/outputs/base"
+require "logstash/outputs/newrelic_internal_version/version"
 require 'net/http'
 require 'uri'
 require 'zlib'
@@ -40,6 +41,10 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   end
 
   def encode(event)
+    event.set('plugin', {
+      'type' => 'logstash',
+      'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
+    })
     event.remove('@timestamp')
     event.to_hash
   end
