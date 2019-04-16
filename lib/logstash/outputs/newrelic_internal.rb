@@ -1,15 +1,15 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/outputs/newrelic_internal_version/version"
-require "net/http"
-require "uri"
-require "zlib"
-require "json"
-require "java"
+require 'net/http'
+require 'uri'
+require 'zlib'
+require 'json'
+require 'java'
 
 class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
-  java_import java.util.concurrent.Executors
-  java_import java.util.concurrent.Semaphore
+  java_import java.util.concurrent.Executors;
+  java_import java.util.concurrent.Semaphore;
 
   config_name "newrelic_internal"
 
@@ -27,9 +27,9 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   def register
     @end_point = URI.parse(@base_uri)
     @header = {
-      "X-Insert-Key" => @api_key.value,
-      "X-Event-Source" => "logs",
-      "Content-Encoding" => "gzip",
+        'X-Insert-Key' => @api_key.value,
+        'X-Event-Source' => 'logs',
+        'Content-Encoding' => 'gzip',
     }.freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
@@ -41,11 +41,11 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   end
 
   def encode(event)
-    event.set("plugin", {
-      "type" => "logstash",
-      "version" => LogStash::Outputs::NewRelicInternalVersion::VERSION,
+    event.set('plugin', {
+      'type' => 'logstash',
+      'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
     })
-    event.remove("@timestamp")
+    event.remove('@timestamp')
     event.to_hash
   end
 
@@ -73,7 +73,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     attempt < retries
   end
 
-  def sleep_duration(attempt)
+  def sleep_duration(attempt) 
     [max_delay, (2 ** attempt) * retry_seconds].min
   end
 
@@ -91,7 +91,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     request = Net::HTTP::Post.new(@end_point.request_uri)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    @header.each { |k, v| request[k] = v }
+    @header.each {|k, v| request[k] = v}
     request.body = payload
     http.request(request)
   end
