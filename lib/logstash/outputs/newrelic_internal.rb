@@ -29,7 +29,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     @header = {
         'X-Insert-Key' => @api_key.value,
         'X-Event-Source' => 'logs',
-        'Content-Encoding' => 'gzip',
+        'Content-Encoding' => 'gzip'
     }.freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
