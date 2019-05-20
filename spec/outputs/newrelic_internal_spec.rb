@@ -72,47 +72,51 @@ describe LogStash::Outputs::NewRelicInternal do
               })).to have_been_made
     end
   end
-
   context "request body" do
 
-    it "message contains plugin information" do
+    it "JSON 'message' field is parsed, removed, and its data merged as attributes" do
       stub_request(:any, base_uri).to_return(status: 200)
 
-      event = LogStash::Event.new({ :message => "Test message", :@timestamp => '123' })
+      message_json = '{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }'
+      event = LogStash::Event.new({ :message => "message_json", :other => "Other value" })
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-      .with { |request| 
-        message = single_gzipped_message(request.body)
-        message['plugin']['type'] == 'logstash' &&
-        message['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
-      .to have_been_made
-    end
-
-    # TODO: why is this field always removed?
-    it "'@timestamp' field is removed" do
-      stub_request(:any, base_uri).to_return(status: 200)
-
-      event = LogStash::Event.new({ :message => "Test message", :@timestamp => '123' })
-      @newrelic_output.multi_receive([event])
-
-      wait_for(a_request(:post, base_uri)
-        .with { |request| single_gzipped_message(request.body)['@timestamp'] == nil })
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['in-json-1'] == '1' &&
+          message['in-json-2'] == '2' &&
+          message['sub-object'] == '{"in-json-3": "3"}'
+          message['other'] == 'Other value' })
         .to have_been_made
     end
 
-    it "all other fields passed through as is" do
+    it "other JSON fields are not parsed" do
       stub_request(:any, base_uri).to_return(status: 200)
 
-      event = LogStash::Event.new({ :message => "Test message", :other => "Other value" })
+      other_json = '{ "key": "value" }'
+      event = LogStash::Event.new({ :message => "Test message", :other => other_json })
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
         .with { |request| 
           message = single_gzipped_message(request.body)
           message['message'] == 'Test message' &&
-          message['other'] == 'Other value' })
+          message['other'] == other_json })
         .to have_been_made
+    end
+
+    it "handles messages without a 'message' field" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :other => 'Other value' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+      .with { |request| 
+        message = single_gzipped_message(request.body)
+        message['other'] == 'Other value' })
+      .to have_been_made
     end
 
     it "multiple events" do

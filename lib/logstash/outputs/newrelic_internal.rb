@@ -45,13 +45,25 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
       'type' => 'logstash',
       'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
     })
-    parse = {}
+    event.remove('@timestamp')
+    maybe_parse_message_json(event)
+    event
+  end
+
+  def maybe_parse_message_json(event)
+    message = event.get('message')
+    if message != nil
+      event.to_hash.merge(maybe_parse_json(message))
+    end
+  end
+
+  def maybe_parse_json(message)
+    parsed = {}    
     begin
-      parsed = JSON.parse(event.message)
+      parsed = JSON.parse(message)
     rescue JSON::ParserError
     end
-    event.remove('@timestamp')
-    event.to_hash.merge(parsed)
+    parsed
   end
 
   def multi_receive(events)
