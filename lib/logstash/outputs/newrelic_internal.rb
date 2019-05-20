@@ -47,7 +47,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     })
     event.remove('@timestamp')
     maybe_parse_message_json(event)
-    event
+    event.to_hash
   end
 
   def maybe_parse_message_json(event)
