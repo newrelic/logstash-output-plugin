@@ -72,7 +72,6 @@ describe LogStash::Outputs::NewRelicInternal do
               })).to have_been_made
     end
   end
-
   context "request body" do
 
     it "message contains plugin information" do
@@ -113,6 +112,51 @@ describe LogStash::Outputs::NewRelicInternal do
           message['message'] == 'Test message' &&
           message['other'] == 'Other value' })
         .to have_been_made
+    end
+    
+    it "JSON 'message' field is parsed, removed, and its data merged as attributes" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      message_json = '{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }'
+      event = LogStash::Event.new({ :message => message_json, :other => "Other value" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['in-json-1'] == '1' &&
+          message['in-json-2'] == '2' &&
+          message['sub-object'] == {"in-json-3" => "3"} &&
+          message['other'] == 'Other value' })
+        .to have_been_made
+    end
+
+    it "other JSON fields are not parsed" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      other_json = '{ "key": "value" }'
+      event = LogStash::Event.new({ :message => "Test message", :other => other_json })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['message'] == 'Test message' &&
+          message['other'] == other_json })
+        .to have_been_made
+    end
+
+    it "handles messages without a 'message' field" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :other => 'Other value' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+      .with { |request| 
+        message = single_gzipped_message(request.body)
+        message['other'] == 'Other value' })
+      .to have_been_made
     end
 
     it "multiple events" do
