@@ -40,25 +40,26 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     @executor&.shutdown
   end
 
-  def encode(event)
-    event.set('plugin', {
+  def encode(event_hash)
+    event_hash['plugin'] = {
       'type' => 'logstash',
       'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
-    })
-    event.remove('@timestamp')
-    maybe_parse_message_json(event)
-    event.to_hash
+    }
+    event_hash.delete('@timestamp')
+    event_hash = maybe_parse_message_json(event_hash)
+    event_hash
   end
 
-  def maybe_parse_message_json(event)
-    message = event.get('message')
-    if message != nil
-      event.to_hash.merge(maybe_parse_json(message))
+  def maybe_parse_message_json(event_hash)
+    if event_hash.has_key?('message')
+      message = event_hash['message']
+      event_hash = event_hash.merge(maybe_parse_json(message))
     end
+    event_hash
   end
 
   def maybe_parse_json(message)
-    parsed = {}    
+    parsed = {}
     begin
       parsed = JSON.parse(message)
     rescue JSON::ParserError
@@ -69,7 +70,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   def multi_receive(events)
     payload = []
     events.each do |event|
-      payload.push(encode(event))
+      payload.push(encode(event.to_hash))
     end
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]

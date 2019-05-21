@@ -118,7 +118,7 @@ describe LogStash::Outputs::NewRelicInternal do
       stub_request(:any, base_uri).to_return(status: 200)
 
       message_json = '{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }'
-      event = LogStash::Event.new({ :message => "message_json", :other => "Other value" })
+      event = LogStash::Event.new({ :message => message_json, :other => "Other value" })
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
@@ -126,7 +126,7 @@ describe LogStash::Outputs::NewRelicInternal do
           message = single_gzipped_message(request.body)
           message['in-json-1'] == '1' &&
           message['in-json-2'] == '2' &&
-          message['sub-object'] == '{"in-json-3": "3"}'
+          message['sub-object'] == {"in-json-3" => "3"} &&
           message['other'] == 'Other value' })
         .to have_been_made
     end
