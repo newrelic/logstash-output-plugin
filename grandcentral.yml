@@ -1,6 +1,7 @@
 deploy_mechanism: none
 display_name: "NewRelicLogstashOutput"
-require_sidekick_approval: false
+slack_channel: logging-notifications
+require_sidekick_approval: true
 test_suites:
 - command: |
     mkdir -p ~/.gem
@@ -18,10 +19,6 @@ build:
       shared_path: artifactory
     - name: ARTIFACTORY_PASSWORD
       shared_path: artifactory
-  master_merge_version_bump:
-    command: |
-      bundle install
-      gem bump --version pre --no-commit
   publish:
     command: |
       mkdir -p ~/.gem
@@ -30,4 +27,4 @@ build:
       bundle install
       gem release --host https://artifacts.datanerd.us/api/gems/newrelic-gems-local
   read_version:
-    command: grep version logstash-output-newrelic.gemspec | tr -d "'\"" | awk '{ print $3 }'
+    command: grep VERSION lib/logstash/outputs/newrelic_internal_version/version.rb | tr -d "'\"" | awk '{ print $3 }'
