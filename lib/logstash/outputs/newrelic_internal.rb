@@ -59,12 +59,14 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   end
 
   def maybe_parse_json(message)
-    parsed = {}
     begin
       parsed = JSON.parse(message)
+      if Hash === parsed
+        return parsed
+      end
     rescue JSON::ParserError
     end
-    parsed
+    return {}
   end
 
   def multi_receive(events)

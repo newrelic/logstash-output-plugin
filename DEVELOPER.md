@@ -3,6 +3,7 @@
 # Getting started
 
 * Install JRuby: `rbenv install jruby-9.2.5.0`
+* Use that JRuby: `rbenv local jruby-9.2.5.0`
 * Install Bundler gem: `jruby -S gem install bundler`
 
 # Developing
