@@ -114,7 +114,7 @@ describe LogStash::Outputs::NewRelicInternal do
         .to have_been_made
     end
     
-    it "JSON 'message' field is parsed, removed, and its data merged as attributes" do
+    it "JSON object 'message' field is parsed, removed, and its data merged as attributes" do
       stub_request(:any, base_uri).to_return(status: 200)
 
       message_json = '{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }'
@@ -131,6 +131,36 @@ describe LogStash::Outputs::NewRelicInternal do
         .to have_been_made
     end
 
+    it "JSON array 'message' field is not parsed, left as is" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      message_json_array = '[{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }]'
+      event = LogStash::Event.new({ :message => message_json_array, :other => "Other value" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['message'] == message_json_array &&
+          message['other'] == 'Other value' })
+        .to have_been_made
+    end
+
+    it "JSON string 'message' field is not parsed, left as is" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      message_json_string = '"I can be parsed as JSON"'
+      event = LogStash::Event.new({ :message => message_json_string, :other => "Other value" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request| 
+          message = single_gzipped_message(request.body)
+          message['message'] == message_json_string &&
+          message['other'] == 'Other value' })
+        .to have_been_made
+    end
+    
     it "other JSON fields are not parsed" do
       stub_request(:any, base_uri).to_return(status: 200)
 
