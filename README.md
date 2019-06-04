@@ -59,6 +59,38 @@ input {
 * Append a test log message to your log file: `echo "test message" >> /path/to/your/log/file`
 * Search New Relic Logs for `"test message"`
   
+## Notes
+
+This plugin will attempt to parse any 'message' attribute as JSON -- if it is JSON, its JSON attributes will be added to the event.
+
+For example, the events:
+```
+[{
+  "message": "some message",
+  "other": "other value"
+},
+{
+  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
+  "other": "other value"
+}]
+```
+
+Will be output as:
+```
+[{
+  "message": "some message",
+  "other": "other value"
+},
+{
+  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
+  "key": "value1",
+  "compound": {
+    "sub_key": "value2"
+  },
+  "other": "other value"
+}]
+```
+
 ## Development 
 
 See [DEVELOPER.md](DEVELOPER.md)
