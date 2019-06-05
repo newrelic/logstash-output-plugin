@@ -42,8 +42,7 @@ Getting the API Insert Key:
 | retries | The maximum number of times to retry a failed request, exponentially increasing delay between each retry | 5 |
 | retry_seconds | The inital delay between retries, in seconds | 5 |
 | max_delay | The maximum delay between retries, in seconds | 30 |
-| base_uri | New Relic ingestion endpoint | 'insights-collector.newrelic.com/logs/v1' |
-| event_type | The New Relic event type | 'log' |
+| base_uri | New Relic ingestion endpoint | 'https://insights-collector.newrelic.com/logs/v1' |
 
 ## Testing 
 
