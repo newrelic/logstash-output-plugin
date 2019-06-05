@@ -30,7 +30,7 @@ describe LogStash::Outputs::NewRelicInternal do
   end
 
   def single_gzipped_message(body)
-    message = JSON.parse(gunzip(body))
+    message = JSON.parse(gunzip(body))['logs']
     expect(message.length).to equal(1)
     message[0] 
   end
@@ -82,9 +82,9 @@ describe LogStash::Outputs::NewRelicInternal do
 
       wait_for(a_request(:post, base_uri)
       .with { |request| 
-        message = single_gzipped_message(request.body)
-        message['plugin']['type'] == 'logstash' &&
-        message['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
+        data = multiple_gzipped_messages(request.body)
+        data['common']['attributes']['plugin']['type'] == 'logstash' &&
+        data['common']['attributes']['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
       .to have_been_made
     end
 
@@ -198,7 +198,7 @@ describe LogStash::Outputs::NewRelicInternal do
 
       wait_for(a_request(:post, base_uri)
         .with { |request| 
-          messages = multiple_gzipped_messages(request.body)
+          messages = multiple_gzipped_messages(request.body)['logs']
           messages.length == 2 &&
           messages[0]['message'] == 'Test message 1' &&
           messages[1]['message'] == 'Test message 2' })
