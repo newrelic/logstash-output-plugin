@@ -18,7 +18,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   config :event_type, :validate => :string, :default => 'log'
   config :retries, :validate => :number, :default => 5
   config :concurrent_requests, :validate => :number, :default => 1
-  config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/logs/v1"
+  config :base_uri, :validate => :string, :default => "https://log-api.newrelic.com/log/v1"
 
   # TODO: do we need to define "concurrency"? https://www.elastic.co/guide/en/logstash/current/_how_to_write_a_logstash_output_plugin.html
 
