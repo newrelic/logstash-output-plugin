@@ -12,7 +12,7 @@ describe LogStash::Outputs::NewRelicInternal do
   let (:base_uri) { "https://testing-example-collector.com" }
   let (:retry_seconds) { 0 }
   # Don't sleep in tests, to keep tests fast. We have a test for the method that produces the sleep duration between retries.
-  let (:max_delay) { 0 } 
+  let (:max_delay) { 0 }
   let (:retries) { 3 }
   let (:simple_config) {
     {
@@ -30,9 +30,9 @@ describe LogStash::Outputs::NewRelicInternal do
   end
 
   def single_gzipped_message(body)
-    message = JSON.parse(gunzip(body))
+    message = JSON.parse(gunzip(body))[0]['logs']
     expect(message.length).to equal(1)
-    message[0] 
+    message[0]
   end
 
   def multiple_gzipped_messages(body)
@@ -81,10 +81,10 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-      .with { |request| 
-        message = single_gzipped_message(request.body)
-        message['plugin']['type'] == 'logstash' &&
-        message['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
+      .with { |request|
+        data = multiple_gzipped_messages(request.body)[0]
+        data['common']['attributes']['plugin']['type'] == 'logstash' &&
+        data['common']['attributes']['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
       .to have_been_made
     end
 
@@ -107,13 +107,13 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-        .with { |request| 
+        .with { |request|
           message = single_gzipped_message(request.body)
           message['message'] == 'Test message' &&
           message['other'] == 'Other value' })
         .to have_been_made
     end
-    
+
     it "JSON object 'message' field is parsed, removed, and its data merged as attributes" do
       stub_request(:any, base_uri).to_return(status: 200)
 
@@ -122,7 +122,7 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-        .with { |request| 
+        .with { |request|
           message = single_gzipped_message(request.body)
           message['in-json-1'] == '1' &&
           message['in-json-2'] == '2' &&
@@ -139,7 +139,7 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-        .with { |request| 
+        .with { |request|
           message = single_gzipped_message(request.body)
           message['message'] == message_json_array &&
           message['other'] == 'Other value' })
@@ -154,13 +154,13 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-        .with { |request| 
+        .with { |request|
           message = single_gzipped_message(request.body)
           message['message'] == message_json_string &&
           message['other'] == 'Other value' })
         .to have_been_made
     end
-    
+
     it "other JSON fields are not parsed" do
       stub_request(:any, base_uri).to_return(status: 200)
 
@@ -169,7 +169,7 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-        .with { |request| 
+        .with { |request|
           message = single_gzipped_message(request.body)
           message['message'] == 'Test message' &&
           message['other'] == other_json })
@@ -183,7 +183,7 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       wait_for(a_request(:post, base_uri)
-      .with { |request| 
+      .with { |request|
         message = single_gzipped_message(request.body)
         message['other'] == 'Other value' })
       .to have_been_made
@@ -197,8 +197,8 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event1, event2])
 
       wait_for(a_request(:post, base_uri)
-        .with { |request| 
-          messages = multiple_gzipped_messages(request.body)
+        .with { |request|
+          messages = multiple_gzipped_messages(request.body)[0]['logs']
           messages.length == 2 &&
           messages[0]['message'] == 'Test message 1' &&
           messages[1]['message'] == 'Test message 2' })
@@ -209,7 +209,7 @@ describe LogStash::Outputs::NewRelicInternal do
   context "retry" do
     it "sleep periods double each time up to max time" do
       specific_config = simple_config.clone
-      # Use non-trivial times -- they can be big, since this test doesn't do any sleeping, just 
+      # Use non-trivial times -- they can be big, since this test doesn't do any sleeping, just
       # tests the sleep duration
       specific_config["max_delay"] = 60
       specific_config["retry_seconds"] = 5
@@ -219,7 +219,7 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output&.shutdown
       @newrelic_output = LogStash::Plugin.lookup("output", "newrelic_internal").new(specific_config)
       @newrelic_output.register
-      
+
       expect(@newrelic_output.sleep_duration(0)).to equal(5)
       expect(@newrelic_output.sleep_duration(1)).to equal(10)
       expect(@newrelic_output.sleep_duration(2)).to equal(20)
@@ -259,9 +259,9 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output.multi_receive([event])
 
       # This may not fail if the wait_for is called exactly when there have been 'retries' calls.
-      # However, with zero sleep time (max_delay=0), on a laptop the POST was done 2000+ times by the 
+      # However, with zero sleep time (max_delay=0), on a laptop the POST was done 2000+ times by the
       # time this was executed
-      wait_for(a_request(:post, base_uri)).to have_been_made.times(retries) 
+      wait_for(a_request(:post, base_uri)).to have_been_made.times(retries)
     end
   end
 

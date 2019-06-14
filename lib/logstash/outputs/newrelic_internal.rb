@@ -41,10 +41,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
   end
 
   def encode(event_hash)
-    event_hash['plugin'] = {
-      'type' => 'logstash',
-      'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
-    }
+
     event_hash.delete('@timestamp')
     event_hash = maybe_parse_message_json(event_hash)
     event_hash
@@ -74,13 +71,24 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     events.each do |event|
       payload.push(encode(event.to_hash))
     end
+    payload = {
+      'logs' => payload,
+      'common' => {
+        'attributes' => {
+          'plugin' =>  {
+            'type' => 'logstash',
+            'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
+          }
+        }
+      }
+    }
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
       begin
         io = StringIO.new
         gzip = Zlib::GzipWriter.new(io)
-        gzip << payload.to_json
+        gzip << [payload].to_json
         gzip.close
         attempt_send(io.string, 0)
       ensure
@@ -93,7 +101,7 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     attempt < retries
   end
 
-  def sleep_duration(attempt) 
+  def sleep_duration(attempt)
     [max_delay, (2 ** attempt) * retry_seconds].min
   end
 
