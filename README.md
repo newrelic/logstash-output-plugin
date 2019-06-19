@@ -42,10 +42,9 @@ Getting the API Insert Key:
 | retries | The maximum number of times to retry a failed request, exponentially increasing delay between each retry | 5 |
 | retry_seconds | The inital delay between retries, in seconds | 5 |
 | max_delay | The maximum delay between retries, in seconds | 30 |
-| base_uri | New Relic ingestion endpoint | 'insights-collector.newrelic.com/logs/v1' |
-| event_type | The New Relic event type | 'log' |
+| base_uri | New Relic ingestion endpoint | https://log-api.newrelic.com/log/v1 |
 
-## Testing 
+## Testing
 
 An easy way to test the plugin is to make sure Logstash is getting input from a log file you can write to. Something like this in your logstash.conf:
 ```
@@ -58,7 +57,7 @@ input {
 * Restart Logstash
 * Append a test log message to your log file: `echo "test message" >> /path/to/your/log/file`
 * Search New Relic Logs for `"test message"`
-  
+
 ## Notes
 
 This plugin will attempt to parse any 'message' attribute as JSON -- if it is JSON, its JSON attributes will be added to the event.
@@ -67,22 +66,16 @@ For example, the events:
 ```
 [{
   "message": "some message",
-  "other": "other value"
+  "timestamp": 1531414060739
 },
 {
-  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
-  "other": "other value"
+  {"message":"some_message","timestamp":"12897439", "compound" :"{\"a\":111, \"b\":222}"},
 }]
 ```
 
 Will be output as:
 ```
-[{
-  "message": "some message",
-  "other": "other value"
-},
-{
-  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
+[{  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
   "key": "value1",
   "compound": {
     "sub_key": "value2"
@@ -91,6 +84,6 @@ Will be output as:
 }]
 ```
 
-## Development 
+## Development
 
 See [DEVELOPER.md](DEVELOPER.md)

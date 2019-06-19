@@ -1,5 +1,5 @@
 # Developing the plugin
- 
+
 # Getting started
 
 * Install JRuby: `rbenv install jruby-9.2.5.0`
@@ -28,11 +28,11 @@ After updating the New Relic repo with changes, changes will need to be pushed t
 * Add new version: `logstash-plugin install logstash-output-newrelic-internal-<version>.gem `
 * Restart logstash: For Homebrew: `brew services restart logstash`
 * Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
-* Look in `https://wanda-ui.staging-service.newrelic.com/launcher/logger.log-launcher` for your log message
+* Look in `https://staging-one.newrelic.com/launcher/logger.log-launcher` for your log message
 
 # Testing it from Gemfury
 
-`logstash-plugin` will happily take our plugin from its 
+`logstash-plugin` will happily take our plugin from its
 local gem cache, ignoring our Gemfury source. So before testing install from Gemfury, you should clean the cache after
 removing the previous plugin version (see above):
 * Remove cached versions. From Logstash's vendor directory: `find . -name \*newrelic\*`. Delete the appropriate files.
@@ -49,4 +49,3 @@ After merging to master you must also push the code to Gemfury, which is where c
    * Push the new commits to Gemfury: `git push fury master`
    * For the password, use the "Personal full access token" seen here https://manage.fury.io/manage/newrelic/tokens/shared
    * Make sure you see your new code show up here: `https://manage.fury.io/dashboard/nrsf`
-   * TODO: should this be part of the build step in Jenkins?
