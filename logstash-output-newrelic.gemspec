@@ -4,11 +4,11 @@ $:.unshift lib unless $:.include?(lib)
 require 'logstash/outputs/newrelic_internal_version/version'
 
 Gem::Specification.new do |s|
-  s.name          = 'logstash-output-newrelic-internal'
+  s.name          = 'logstash-output-newrelic-logging'
   s.version       = LogStash::Outputs::NewRelicInternalVersion::VERSION
   s.licenses      = ['Apache-2.0']
   s.summary       = 'Forwards logs as custom events to insights'
-  s.description   = 'Gzips up to and decorates logstash events to be properly formatted as custom events'
+  s.description   = 'Gzips and decorates logstash events to be properly formatted as custom events'
   s.homepage      = 'https://source.datanerd.us/logging/logstash-output-newrelic'
   s.authors       = ['New Relic Logging Team']
   s.email         = 'logging-team@newrelic.com'
@@ -28,5 +28,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "logstash-devutils"
   s.add_development_dependency "webmock"
   s.add_development_dependency "rspec-wait"
-  
+
 end

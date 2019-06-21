@@ -2,18 +2,17 @@
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash) that outputs logs to New Relic.
 
-
 ## Installation
-
-* Tell Logstash where to find our plugin
-  * Find the Logstash Gemfile (For example: `/usr/share/logstash/Gemfile` in some Linux installs)
-  * Add the following to the top of Logstash's Gemfile: `source "https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf"`
-* Install the plugin: `logstash-plugin install --no-verify logstash-output-newrelic-internal`
+Install the New Relic Logstash plugin, use the following command:</br>
+`logstash-plugin install logstash-output-newrelic-logging`
 
 ## Configuration
 
 Add the following block to your logstash.conf (with your specific API Insert key), then restart Logstash.
 There are other optional configuration properties, see below.
+
+Get your API Insert Key:
+`https://insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
 
 Example:
 ```rb
@@ -23,9 +22,6 @@ output {
   }
 }
 ```
-
-Getting the API Insert Key:
-`https://insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
 
 
 ### Required plugin configuration
@@ -42,10 +38,10 @@ Getting the API Insert Key:
 | retries | The maximum number of times to retry a failed request, exponentially increasing delay between each retry | 5 |
 | retry_seconds | The inital delay between retries, in seconds | 5 |
 | max_delay | The maximum delay between retries, in seconds | 30 |
-| base_uri | New Relic ingestion endpoint | 'insights-collector.newrelic.com/logs/v1' |
+| base_uri | New Relic ingestion endpoint | insights-collector.newrelic.com/logs/v1 |
 | event_type | The New Relic event type | 'log' |
 
-## Testing 
+## Testing
 
 An easy way to test the plugin is to make sure Logstash is getting input from a log file you can write to. Something like this in your logstash.conf:
 ```
@@ -58,7 +54,7 @@ input {
 * Restart Logstash
 * Append a test log message to your log file: `echo "test message" >> /path/to/your/log/file`
 * Search New Relic Logs for `"test message"`
-  
+
 ## Notes
 
 This plugin will attempt to parse any 'message' attribute as JSON -- if it is JSON, its JSON attributes will be added to the event.
@@ -91,6 +87,6 @@ Will be output as:
 }]
 ```
 
-## Development 
+## Development
 
 See [DEVELOPER.md](DEVELOPER.md)
