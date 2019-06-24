@@ -3,7 +3,7 @@
 This is a plugin for [Logstash](https://github.com/elastic/logstash) that outputs logs to New Relic.
 
 ## Installation
-Install the New Relic Logstash plugin, use the following command:</br>
+Install the New Relic Logstash plugin using the following command:</br>
 `logstash-plugin install logstash-output-newrelic-logging`
 
 ## Configuration
@@ -38,8 +38,7 @@ output {
 | retries | The maximum number of times to retry a failed request, exponentially increasing delay between each retry | 5 |
 | retry_seconds | The inital delay between retries, in seconds | 5 |
 | max_delay | The maximum delay between retries, in seconds | 30 |
-| base_uri | New Relic ingestion endpoint | insights-collector.newrelic.com/logs/v1 |
-| event_type | The New Relic event type | 'log' |
+| base_uri | New Relic ingestion endpoint | https://log-api.newrelic.com/log/v1 |
 
 ## Testing
 
@@ -63,22 +62,16 @@ For example, the events:
 ```
 [{
   "message": "some message",
-  "other": "other value"
+  "timestamp": 1531414060739
 },
 {
-  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
-  "other": "other value"
+  {"message":"some_message","timestamp":"12897439", "compound" :"{\"a\":111, \"b\":222}"},
 }]
 ```
 
 Will be output as:
 ```
-[{
-  "message": "some message",
-  "other": "other value"
-},
-{
-  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
+[{  "message": "{\"key\": \"value1\", \"compound\": {\"sub_key\": \"value2\"}}",
   "key": "value1",
   "compound": {
     "sub_key": "value2"
