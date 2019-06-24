@@ -34,4 +34,4 @@ After updating the New Relic repo with changes, changes will need to be pushed t
 After updating the source code and gem version in `version.rb`, push the changes to RubyGems. Note, you must be a gem owner to publish changes on [RubyGems.org](https://rubygems.org/profiles/NR-LOGGING)
 
 * Build the gem: `gem build logstash-output-newrelic.gemspec`
-* Publish the gem: `gem push logstash-output-newrelic-<VERSION>.gem` with the updated version (ex: `gem push logstash-output-newrelic-0.2.11.gem`)
+* Publish the gem: `gem push logstash-output-newrelic-logging-<VERSION>.gem` with the updated version (ex: `gem push logstash-output-newrelic-logging-0.2.16.gem`)
