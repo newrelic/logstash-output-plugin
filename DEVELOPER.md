@@ -30,22 +30,8 @@ After updating the New Relic repo with changes, changes will need to be pushed t
 * Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
 * Look in `https://staging-one.newrelic.com/launcher/logger.log-launcher` for your log message
 
-# Testing it from Gemfury
+# Push changes to RubyGems
+After updating the source code and gem version in `version.rb`, push the changes to RubyGems. Note, you must be a gem owner to publish changes on [RubyGems.org](https://rubygems.org/profiles/NR-LOGGING)
 
-`logstash-plugin` will happily take our plugin from its
-local gem cache, ignoring our Gemfury source. So before testing install from Gemfury, you should clean the cache after
-removing the previous plugin version (see above):
-* Remove cached versions. From Logstash's vendor directory: `find . -name \*newrelic\*`. Delete the appropriate files.
-* Follow the instructions in the README for installing from Gemfury
-
-# Deploying to Gemfury
-
-After merging to master you must also push the code to Gemfury, which is where customers will get our gem from.
-* Get the version you just merged to master in Github
-  * `git checkout master`
-  * `git pull`
-* Push the new master to Gemfury
-   * Add Gemfury as remote (only needs to be done once): `git remote add fury https://<your-gemfury-username>@git.fury.io/nrsf/logstash-output-newrelic.git`
-   * Push the new commits to Gemfury: `git push fury master`
-   * For the password, use the "Personal full access token" seen here https://manage.fury.io/manage/newrelic/tokens/shared
-   * Make sure you see your new code show up here: `https://manage.fury.io/dashboard/nrsf`
+* Build the gem: `gem build logstash-output-newrelic.gemspec`
+* Publish the gem: `gem push logstash-output-newrelic-logging-<VERSION>.gem` with the updated version (ex: `gem push logstash-output-newrelic-logging-0.2.16.gem`)

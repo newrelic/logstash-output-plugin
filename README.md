@@ -2,18 +2,17 @@
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash) that outputs logs to New Relic.
 
-
 ## Installation
-
-* Tell Logstash where to find our plugin
-  * Find the Logstash Gemfile (For example: `/usr/share/logstash/Gemfile` in some Linux installs)
-  * Add the following to the top of Logstash's Gemfile: `source "https://1keEQc-cII8DjYRJVdpUXAw6DUPV6JmjpE@repo.fury.io/nrsf"`
-* Install the plugin: `logstash-plugin install --no-verify logstash-output-newrelic-internal`
+Install the New Relic Logstash plugin using the following command:</br>
+`logstash-plugin install logstash-output-newrelic-logging`
 
 ## Configuration
 
 Add the following block to your logstash.conf (with your specific API Insert key), then restart Logstash.
 There are other optional configuration properties, see below.
+
+Get your API Insert Key:
+`https://insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
 
 Example:
 ```rb
@@ -23,9 +22,6 @@ output {
   }
 }
 ```
-
-Getting the API Insert Key:
-`https://insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
 
 
 ### Required plugin configuration
