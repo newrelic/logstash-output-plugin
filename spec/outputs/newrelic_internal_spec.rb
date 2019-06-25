@@ -219,6 +219,7 @@ describe LogStash::Outputs::NewRelicInternal do
       @newrelic_output&.shutdown
       @newrelic_output = LogStash::Plugin.lookup("output", "newrelic_internal").new(specific_config)
       @newrelic_output.register
+
       expect(@newrelic_output.sleep_duration(0)).to equal(5)
       expect(@newrelic_output.sleep_duration(1)).to equal(10)
       expect(@newrelic_output.sleep_duration(2)).to equal(20)
