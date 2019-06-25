@@ -4,7 +4,15 @@ This is a plugin for [Logstash](https://github.com/elastic/logstash) that output
 
 ## Installation
 Install the New Relic Logstash plugin using the following command:</br>
-`logstash-plugin install logstash-output-newrelic-logging`
+`logstash-plugin install logstash-output-newrelic`
+
+(Optional) If you are interested in installing the gem directly, run the following command. If you want a specific version, specify it by appending the `-v <VERSION>` option.<br/>
+`gem install logstash-output-newrelic`
+
+```
+Old version: 0.9.1 (unmaintained)
+Current: 1.0.0
+```
 
 ## Configuration
 

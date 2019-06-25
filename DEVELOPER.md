@@ -31,7 +31,7 @@ After updating the New Relic repo with changes, changes will need to be pushed t
 * Look in `https://staging-one.newrelic.com/launcher/logger.log-launcher` for your log message
 
 # Push changes to RubyGems
-After updating the source code and gem version in `version.rb`, push the changes to RubyGems. Note, you must be a gem owner to publish changes on [RubyGems.org](https://rubygems.org/profiles/NR-LOGGING)
+After updating the source code and gem version in `version.rb`, push the changes to RubyGems. There is an older version of the gem that we do not want to overwrite — `version 0.9.1`. Please be sure you are publishing changes to the correct gem i.e. `version 1.0.0` or higher. Note, you must be a gem owner to publish changes on [RubyGems.org](https://rubygems.org/profiles/NR-LOGGING). Once you've created the account, you will need to run `gem signin` to login to RubyGems via the command line.
 
 * Build the gem: `gem build logstash-output-newrelic.gemspec`
-* Publish the gem: `gem push logstash-output-newrelic-logging-<VERSION>.gem` with the updated version (ex: `gem push logstash-output-newrelic-logging-0.2.16.gem`)
+* Publish the gem: `gem push logstash-output-newrelic-<VERSION>.gem` with the updated version (ex: `gem push logstash-output-newrelic-1.0.0.gem`)
