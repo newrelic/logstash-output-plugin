@@ -1,24 +1,24 @@
 # encoding: utf-8
 require "logstash/outputs/base"
-require "logstash/outputs/newrelic_internal_version/version"
+require "logstash/outputs/newrelic_version/version"
 require 'net/http'
 require 'uri'
 require 'zlib'
 require 'json'
 require 'java'
 
-class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
+class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
   java_import java.util.concurrent.Semaphore;
 
-  config_name "newrelic_internal"
+  config_name "newrelic"
 
   config :api_key, :validate => :password, :required => true
   config :retry_seconds, :validate => :number, :default => 5
   config :max_delay, :validate => :number, :default => 30
   config :retries, :validate => :number, :default => 5
   config :concurrent_requests, :validate => :number, :default => 1
-  config :base_uri, :validate => :string, :default => "https://insights-collector.newrelic.com/logs/v1"
+  config :base_uri, :validate => :string, :default => "https://log-api.newrelic.com/log/v1"
 
   # TODO: do we need to define "concurrency"? https://www.elastic.co/guide/en/logstash/current/_how_to_write_a_logstash_output_plugin.html
 
@@ -72,15 +72,15 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
       payload.push(encode(event.to_hash))
     end
     payload = {
-      'logs' => payload,
       'common' => {
         'attributes' => {
           'plugin' =>  {
             'type' => 'logstash',
-            'version' => LogStash::Outputs::NewRelicInternalVersion::VERSION,
+            'version' => LogStash::Outputs::NewRelicVersion::VERSION,
           }
         }
-      }
+      },
+      'logs' => payload
     }
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
@@ -123,4 +123,4 @@ class LogStash::Outputs::NewRelicInternal < LogStash::Outputs::Base
     request.body = payload
     http.request(request)
   end
-end # class LogStash::Outputs::NewRelicInternal
+end # class LogStash::Outputs::NewRelic

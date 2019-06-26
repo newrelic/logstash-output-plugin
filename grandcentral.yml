@@ -27,4 +27,4 @@ build:
       bundle install
       gem release --host https://artifacts.datanerd.us/api/gems/newrelic-gems-local
   read_version:
-    command: grep VERSION lib/logstash/outputs/newrelic_internal_version/version.rb | tr -d "'\"" | awk '{ print $3 }'
+    command: grep VERSION lib/logstash/outputs/newrelic_version/version.rb | tr -d "'\"" | awk '{ print $3 }'

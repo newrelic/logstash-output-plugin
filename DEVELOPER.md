@@ -12,7 +12,7 @@
 * Write tests and production code!
 * Bump version: edit version file `version.rb`
 * Run tests: `jruby -S bundle exec rspec`
-* Build the gem: `jruby -S gem build logstash-output-newrelic-internal.gemspec`
+* Build the gem: `jruby -S gem build logstash-output-newrelic.gemspec`
 
 ## Pushing changes to the public repo
 After updating the New Relic repo with changes, changes will need to be pushed to the public GitHub repo at: https://github.com/newrelic/newrelic-fluent-bit-output
@@ -24,8 +24,11 @@ After updating the New Relic repo with changes, changes will need to be pushed t
 
 # Testing it with a local Logstash install
 
-* Remove previous version: `logstash-plugin remove logstash-output-newrelic-internal`
-* Add new version: `logstash-plugin install logstash-output-newrelic-internal-<version>.gem `
+Note: you may need to run the following commands outside of your checkout, since these should not
+be run with the JRuby version that you've configured your checkout to use (by using rbenv). 
+
+* Remove previous version: `logstash-plugin remove logstash-output-newrelic`
+* Add new version: `logstash-plugin install logstash-output-newrelic-<version>.gem`
 * Restart logstash: For Homebrew: `brew services restart logstash`
 * Cause a change that you've configured Logstash to pick up (for instance, append to a file you're having it monitor)
 * Look in `https://staging-one.newrelic.com/launcher/logger.log-launcher` for your log message

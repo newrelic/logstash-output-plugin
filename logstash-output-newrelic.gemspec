@@ -1,15 +1,14 @@
 lib = File.expand_path('../lib/', __FILE__)
 $:.unshift lib unless $:.include?(lib)
 
-require 'logstash/outputs/newrelic_internal_version/version'
+require 'logstash/outputs/newrelic_version/version'
 
 Gem::Specification.new do |s|
   s.name          = 'logstash-output-newrelic'
-  s.version       = LogStash::Outputs::NewRelicInternalVersion::VERSION
+  s.version       = LogStash::Outputs::NewRelicVersion::VERSION
   s.licenses      = ['Apache-2.0']
-  s.summary       = 'Forwards logs as custom events to insights'
-  s.description   = 'Gzips and decorates logstash events to be properly formatted as custom events'
-  s.homepage      = 'https://source.datanerd.us/logging/logstash-output-newrelic'
+  s.summary       = "Sends Lostash events to New Relic"
+  s.homepage      = 'https://github.com/newrelic/logstash-output-plugin'
   s.authors       = ['New Relic Logging Team']
   s.email         = 'logging-team@newrelic.com'
   s.require_paths = ['lib']
