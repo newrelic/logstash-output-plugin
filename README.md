@@ -25,7 +25,7 @@ Get your API Insert Key:
 Example:
 ```rb
 output {
-  newrelic_internal {
+  newrelic {
     api_key => "<API_INSERT_KEY>"
   }
 }

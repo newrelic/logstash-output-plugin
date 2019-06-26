@@ -1,13 +1,13 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/newrelic_internal"
-require "logstash/outputs/newrelic_internal_version/version"
+require "logstash/outputs/newrelic"
+require "logstash/outputs/newrelic_version/version"
 require "logstash/codecs/plain"
 require "logstash/event"
 require "webmock/rspec"
 require "zlib"
 
-describe LogStash::Outputs::NewRelicInternal do
+describe LogStash::Outputs::NewRelic do
   let (:api_key) { "someAccountKey" }
   let (:base_uri) { "https://testing-example-collector.com" }
   let (:retry_seconds) { 0 }
@@ -40,7 +40,7 @@ describe LogStash::Outputs::NewRelicInternal do
   end
 
   before(:each) do
-    @newrelic_output = LogStash::Plugin.lookup("output", "newrelic_internal").new(simple_config)
+    @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
     @newrelic_output.register
   end
 
@@ -53,7 +53,7 @@ describe LogStash::Outputs::NewRelicInternal do
       no_api_key_config = {
       }
 
-      expect { LogStash::Plugin.lookup("output", "newrelic_internal").new(no_api_key_config) }.to raise_error LogStash::ConfigurationError
+      expect { LogStash::Plugin.lookup("output", "newrelic").new(no_api_key_config) }.to raise_error LogStash::ConfigurationError
     end
   end
 
@@ -83,8 +83,10 @@ describe LogStash::Outputs::NewRelicInternal do
       wait_for(a_request(:post, base_uri)
       .with { |request|
         data = multiple_gzipped_messages(request.body)[0]
+        data.keys[0] == 'common' &&
+        data.keys[1] == 'logs' &&
         data['common']['attributes']['plugin']['type'] == 'logstash' &&
-        data['common']['attributes']['plugin']['version'] == LogStash::Outputs::NewRelicInternalVersion::VERSION })
+        data['common']['attributes']['plugin']['version'] == LogStash::Outputs::NewRelicVersion::VERSION })
       .to have_been_made
     end
 
@@ -217,7 +219,7 @@ describe LogStash::Outputs::NewRelicInternal do
       # Create a new plugin with this specific config that has longer retry sleep
       # configuration than we normally want
       @newrelic_output&.shutdown
-      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic_internal").new(specific_config)
+      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(specific_config)
       @newrelic_output.register
 
       expect(@newrelic_output.sleep_duration(0)).to equal(5)
