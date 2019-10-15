@@ -28,7 +28,7 @@ steps:
   displayName: 'move rbenv'
 
 - script: |
-    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
+    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
   displayName: 'add rbenv to path'
 
 - script: curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
