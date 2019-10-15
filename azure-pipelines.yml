@@ -17,10 +17,7 @@ steps:
 - script: |
     brew update
     brew install jruby
-    # sudo apt-get update
-    # sudo apt-get install rbenv ruby-build
-    # sudo apt-get install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev
-  displayName: 'install jruby'
+  displayName: 'Install jruby'
 
 # - script: |
 #     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
@@ -39,3 +36,13 @@ steps:
     source ~/.bash_profile
     jruby -S gem install bundler
   displayName: 'jruby install bundler'
+
+- script: jruby -S bundle install
+  displayName: 'Install dependencies'
+
+- script: jruby -S bundle exec rspec spec --format RspecJunitFormatter --out test_results/TEST-rspec.xml
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/TEST-*.xml'
+    testRunTitle: 'Rspec'
