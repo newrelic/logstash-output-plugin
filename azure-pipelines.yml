@@ -7,7 +7,7 @@ trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'macOS-latest'
 
 steps:
 - task: UseRubyVersion@0
@@ -15,9 +15,12 @@ steps:
     versionSpec: '>= 2.5'
 
 - script: |
-    sudo apt-get update
-    sudo apt-get install rbenv ruby-build
-    sudo apt-get install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev
+    brew update
+    brew install rbenv
+    rbenv init
+    # sudo apt-get update
+    # sudo apt-get install rbenv ruby-build
+    # sudo apt-get install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev
   displayName: 'install rbenv and ruby-build'
 
 # - script: |
@@ -35,7 +38,7 @@ steps:
 - script: |
     source ~/.bashrc
     source ~/.bash_profile
-    rbenv install jruby
-    rbenv local jruby
+    rbenv install jruby-9.2.5.0
+    rbenv local jruby-9.2.5.0
     jruby -S gem install bundler
   displayName: 'install jruby'
