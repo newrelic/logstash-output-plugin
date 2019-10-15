@@ -17,6 +17,7 @@ steps:
 - script: |
     sudo apt-get update
     sudo apt-get install rbenv ruby-build
+    sudo apt-get install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm5 libgdbm-dev
   displayName: 'install rbenv and ruby-build'
 
 # - script: |
