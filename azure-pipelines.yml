@@ -38,10 +38,12 @@ steps:
     jruby -S gem install bundler
   displayName: 'jruby install bundler'
 
-- script: jruby -S bundle install
+- script: |
+    jruby -S bundle install
   displayName: 'Install dependencies'
 
 - script: |
+    jruby -S bundle install rspec
     source ~/.bashrc
     source ~/.bash_profile
     jruby -S bundle exec rspec
