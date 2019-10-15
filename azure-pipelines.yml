@@ -13,6 +13,7 @@ steps:
 - task: UseRubyVersion@0
   inputs:
     versionSpec: '>= 2.5'
+    addToPath: true
 
 - script: |
     brew update
@@ -43,10 +44,17 @@ steps:
 - script: |
     source ~/.bashrc
     source ~/.bash_profile
-    jruby -S bundle exec rspec spec --format RspecJunitFormatter --out test_results/TEST-rspec.xml
+    jruby -S bundle exec rspec
+    # spec --format RspecJunitFormatter --out test_results/TEST-rspec.xml
   displayName: 'Run tests'
+
 - task: PublishTestResults@2
+  condition: succeededOrFailed()
   inputs:
-    testResultsFormat: 'JUnit'
-    testResultsFiles: '**/TEST-*.xml'
-    testRunTitle: 'Rspec'
+    testResultsFiles: '**/test-*.xml'
+    testRunTitle: 'Ruby tests'
+# - task: PublishTestResults@2
+#   inputs:
+#     testResultsFormat: 'JUnit'
+#     testResultsFiles: '**/TEST-*.xml'
+#     testRunTitle: 'Rspec'
