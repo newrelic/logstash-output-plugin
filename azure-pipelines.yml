@@ -14,10 +14,10 @@ steps:
   inputs:
     versionSpec: '>= 2.5'
 
-- script: |
-    gem install bundler
-    bundle install --retry=3 --jobs=4
-  displayName: 'bundle install'
+# - script: |
+#     gem install bundler
+#     bundle install --retry=3 --jobs=4
+#   displayName: 'bundle install'
 
 - script: |
     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
