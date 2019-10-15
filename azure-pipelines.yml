@@ -34,7 +34,7 @@ steps:
 - script: |
     source ~/.bashrc
     source ~/.bash_profile
-    rbenv install jruby-9.2.5.0
-    rbenv local jruby-9.2.5.0
+    rbenv install jruby
+    rbenv local jruby
     jruby -S gem install bundler
   displayName: 'install jruby'
