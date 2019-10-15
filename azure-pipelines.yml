@@ -16,12 +16,11 @@ steps:
 
 - script: |
     brew update
-    brew install rbenv
-    rbenv init
+    brew install jruby
     # sudo apt-get update
     # sudo apt-get install rbenv ruby-build
     # sudo apt-get install autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev
-  displayName: 'install rbenv and ruby-build'
+  displayName: 'install jruby'
 
 # - script: |
 #     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
@@ -38,7 +37,5 @@ steps:
 - script: |
     source ~/.bashrc
     source ~/.bash_profile
-    rbenv install jruby-9.2.5.0
-    rbenv local jruby-9.2.5.0
     jruby -S gem install bundler
-  displayName: 'install jruby'
+  displayName: 'jruby install bundler'
