@@ -33,5 +33,7 @@ steps:
 
 - script: |
     source ~/.bashrc
-    curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
-  displayName: 'check rbenv'
+    rbenv install jruby-9.2.5.0
+    rbenv local jruby-9.2.5.0
+    jruby -S gem install bundler
+  displayName: 'install jruby'
