@@ -28,11 +28,12 @@ steps:
   displayName: 'move rbenv'
 
 - script: |
-    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
   displayName: 'add rbenv to path'
 
 - script: |
     source ~/.bashrc
+    source ~/.bash_profile
     rbenv install jruby-9.2.5.0
     rbenv local jruby-9.2.5.0
     jruby -S gem install bundler
