@@ -14,22 +14,22 @@ steps:
   inputs:
     versionSpec: '>= 2.5'
 
+- script: |
+    sudo apt-get update
+    sudo apt-get install rbenv ruby-build
+  displayName: 'install rbenv and ruby-build'
+
 # - script: |
-#     gem install bundler
-#     bundle install --retry=3 --jobs=4
-#   displayName: 'bundle install'
+#     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+#   displayName: 'install rbenv'
 
-- script: |
-    git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-  displayName: 'install rbenv'
+# - script: |
+#     cd ~/.rbenv && src/configure && make -C src
+#   displayName: 'move rbenv'
 
-- script: |
-    cd ~/.rbenv && src/configure && make -C src
-  displayName: 'move rbenv'
-
-- script: |
-    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
-  displayName: 'add rbenv to path'
+# - script: |
+#     echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
+#   displayName: 'add rbenv to path'
 
 - script: |
     source ~/.bashrc
