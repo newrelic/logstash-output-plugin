@@ -57,3 +57,11 @@ steps:
     testResultsFormat: 'JUnit'
     testResultsFiles: 'test-results.xml'
     testRunTitle: 'Rspec'
+
+- task: Bash@3
+  displayName: 'Build gem'
+  inputs:
+    targetType: 'inline'
+    script: |
+      eval "$(rbenv init -)"
+      jruby -S gem build logstash-output-newrelic.gemspec
