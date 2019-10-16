@@ -22,12 +22,12 @@ steps:
     script: |
       brew update
       brew install rbenv
-      echo '' >> ~/.bash_profile
-      echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
-      echo '' >> ~/.bash_profile
-      echo 'echo "Hello from ~/.bash_profile"' >> ~/.bash_profile
-      echo '---------------- ~/.bash_profile ----------------'
-      cat ~/.bash_profile
+      echo '' >> ~/.bashrc
+      echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+      echo '' >> ~/.bashrc
+      echo 'echo "Hello from ~/.bashrc"' >> ~/.bashrc
+      echo '---------------- ~/.bashrc ----------------'
+      cat ~/.bashrc
       echo '-------------------------------------------------'
       echo '---------------- ls -l ~/.rbenv/shims -----------'
       ls -l ~/.rbenv/shims
@@ -57,9 +57,8 @@ steps:
     script: |
       rbenv install jruby-9.2.5.0
       rbenv global jruby-9.2.5.0
-      eval "$(rbenv init -)"
-      echo '---------------- ~/.bash_profile ----------------'
-      cat ~/.bash_profile
+      echo '---------------- ~/.bashrc ----------------'
+      cat ~/.bashrc
       echo '-------------------------------------------------'
       echo '---------------- ls -l ~/.rbenv/shims -----------'
       ls -l ~/.rbenv/shims
@@ -107,9 +106,8 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      eval "$(rbenv init -)"
-      echo '---------------- ~/.bash_profile ----------------'
-      cat ~/.bash_profile
+      echo '---------------- ~/.bashrc ----------------'
+      cat ~/.bashrc
       echo '-------------------------------------------------'
       echo '---------------- ls -l ~/.rbenv/shims -----------'
       ls -l ~/.rbenv/shims
