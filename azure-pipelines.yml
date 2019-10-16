@@ -15,10 +15,6 @@ steps:
   inputs:
     secureFile: 'credentials'
 
-- script: |
-    mv $(rubyGemsCredentials.secureFilePath) ~/.gem/credentials
-    sudo chmod 600 ~/.gem/credentials
-    cat ~/.gem/credentials
 - task: Bash@3
   displayName: 'Install rbenv'
   inputs:
@@ -73,3 +69,12 @@ steps:
     script: |
       eval "$(rbenv init -)"
       jruby -S gem build logstash-output-newrelic.gemspec
+- task: Bash@3
+  displayName: 'Publish gem to RubyGems'
+  inputs:
+    targetType: 'inline'
+    script: |
+      mv $(rubyGemsCredentials.secureFilePath) ~/.gem/credentials
+      sudo chmod 600 ~/.gem/credentials
+      jruby -S gem push test-nr-deploy-*.gem
+    
