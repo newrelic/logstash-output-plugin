@@ -1,8 +1,3 @@
-# Ruby
-# Package your Ruby project.
-# Add steps that install rails, analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/ruby
-
 trigger:
 - master
 
@@ -69,6 +64,7 @@ steps:
     script: |
       eval "$(rbenv init -)"
       jruby -S gem build logstash-output-newrelic.gemspec
+
 - task: Bash@3
   displayName: 'Publish gem to RubyGems'
   inputs:
