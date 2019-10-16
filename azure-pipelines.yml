@@ -57,6 +57,7 @@ steps:
     script: |
       rbenv install jruby-9.2.5.0
       rbenv global jruby-9.2.5.0
+      eval "$(rbenv init -)"
       echo '---------------- ~/.bash_profile ----------------'
       cat ~/.bash_profile
       echo '-------------------------------------------------'
@@ -106,8 +107,15 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      eval "$(rbenv init -)"
       echo '---------------- ~/.bash_profile ----------------'
       cat ~/.bash_profile
+      echo '-------------------------------------------------'
+      echo '---------------- ls -l ~/.rbenv/shims -----------'
+      ls -l ~/.rbenv/shims
+      echo '-------------------------------------------------'
+      echo '---------------- echo $PATH ---------------------'
+      echo $PATH
       echo '-------------------------------------------------'
       echo '---------------- which jruby --------------------'
       which jruby
