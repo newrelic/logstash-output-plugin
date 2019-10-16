@@ -33,8 +33,11 @@ steps:
       echo '---------------- which ruby ---------------------'
       which ruby
       echo '-------------------------------------------------'
-      echo '---------------- which rbenv --------------------'
-      which rbenv
+      echo '---------------- rbenv version ------------------'
+      rbenv version
+      echo '-------------------------------------------------'
+      echo '---------------- ruby --version -----------------'
+      ruby --version
       echo '-------------------------------------------------'
     noProfile: false
     noRc: false
@@ -55,8 +58,11 @@ steps:
       echo '---------------- which ruby ---------------------'
       which ruby
       echo '-------------------------------------------------'
-      echo '---------------- which rbenv --------------------'
-      which rbenv
+      echo '---------------- rbenv version ------------------'
+      rbenv version
+      echo '-------------------------------------------------'
+      echo '---------------- ruby --version -----------------'
+      ruby --version
       echo '-------------------------------------------------'
     noProfile: false
     noRc: false
@@ -95,8 +101,11 @@ steps:
       echo '---------------- which ruby ---------------------'
       which ruby
       echo '-------------------------------------------------'
-      echo '---------------- which rbenv --------------------'
-      which rbenv
+      echo '---------------- rbenv version ------------------'
+      rbenv version
+      echo '-------------------------------------------------'
+      echo '---------------- ruby --version -----------------'
+      ruby --version
       echo '-------------------------------------------------'
       jruby -S gem install bundler
     noProfile: false
