@@ -14,21 +14,33 @@ steps:
 #   inputs:
 #     versionSpec: '>= 2.5'
 #     addToPath: true
+
+
 - task: Bash@3
   inputs:
+    targetType: 'inline'
     script: |
       brew update
       brew install rbenv
       echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
-    # displayName: 'Install rbenv'
     noProfile: false
+    noRc: false
+  displayName: 'Install rbenv'
+
 - task: Bash@3
   inputs:
+    targetType: 'inline'
     script: |
       rbenv install jruby-9.2.5.0
       rbenv global jruby-9.2.5.0
-    # displayName: 'Install JRuby'
     noProfile: false
+    noRc: false
+  displayName: 'Install rbenv'
+# - bash: |
+#     rbenv install jruby-9.2.5.0
+#     rbenv global jruby-9.2.5.0
+#   displayName: 'Install JRuby'
+#   noProfile: false
 
 # - script: |
 #     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
@@ -43,26 +55,44 @@ steps:
 #   displayName: 'add rbenv to path'
 
     # source ~/.bashrc
-    # source ~/.bash_profiletask: Bash@3
+    # source ~/.bash_profile
+
 - task: Bash@3
   inputs:
+    targetType: 'inline'
     script: |
       jruby -S gem install bundler
     noProfile: false
-    # displayName: 'Install bundler'
-  
+    noRc: false
+  displayName: 'Install bundler'
+# - bash: |
+#     jruby -S gem install bundler
+#   displayName: 'Install bundler'
+#   noProfile: false
 - task: Bash@3
   inputs:
+    targetType: 'inline'
     script: |
       jruby -S bundle install
-    # displayName: 'Install dependencies'
     noProfile: false
+    noRc: false
+  displayName: 'Install dependencies'
+# - bash: |
+#     jruby -S bundle install
+#   displayName: 'Install dependencies'
+#   noProfile: false
 - task: Bash@3
   inputs:
+    targetType: 'inline'
     script: |
       jruby -S bundle exec rspec
-    # displayName: 'Run tests'
     noProfile: false
+    noRc: false
+  displayName: 'Run tests'
+# - bash: |
+#     jruby -S bundle exec rspec
+#   displayName: 'Run tests'
+#   noProfile: false
 
 # - task: PublishTestResults@2
 #   condition: succeededOrFailed()
