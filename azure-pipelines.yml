@@ -23,6 +23,12 @@ steps:
       brew update
       brew install rbenv
       echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
+      echo '---------------- ~/.bash_profile ----------------'
+      cat ~/.bash_profile
+      echo '-------------------------------------------------'
+      echo '---------------- which jruby --------------------'
+      which jruby
+      echo '-------------------------------------------------'
     noProfile: false
     noRc: false
   displayName: 'Install rbenv'
@@ -33,9 +39,15 @@ steps:
     script: |
       rbenv install jruby-9.2.5.0
       rbenv global jruby-9.2.5.0
+      echo '---------------- ~/.bash_profile ----------------'
+      cat ~/.bash_profile
+      echo '-------------------------------------------------'
+      echo '---------------- which jruby --------------------'
+      which jruby
+      echo '-------------------------------------------------'
     noProfile: false
     noRc: false
-  displayName: 'Install rbenv'
+  displayName: 'Install JRuby'
 # - bash: |
 #     rbenv install jruby-9.2.5.0
 #     rbenv global jruby-9.2.5.0
@@ -61,6 +73,12 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      echo '---------------- ~/.bash_profile ----------------'
+      cat ~/.bash_profile
+      echo '-------------------------------------------------'
+      echo '---------------- which jruby --------------------'
+      which jruby
+      echo '-------------------------------------------------'
       jruby -S gem install bundler
     noProfile: false
     noRc: false
