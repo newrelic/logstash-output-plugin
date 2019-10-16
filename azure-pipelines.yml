@@ -10,77 +10,24 @@ pool:
   vmImage: 'macOS-latest'
 
 steps:
-# - task: UseRubyVersion@0
-#   inputs:
-#     versionSpec: '>= 2.5'
-#     addToPath: true
-
 
 - task: Bash@3
+  displayName: 'Install rbenv'
   inputs:
     targetType: 'inline'
     script: |
       brew update
       brew install rbenv
-      echo '' >> ~/.bashrc
-      echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-      echo '' >> ~/.bashrc
-      echo 'echo "Hello from ~/.bashrc"' >> ~/.bashrc
-      echo '---------------- ~/.bashrc ----------------'
-      cat ~/.bashrc
-      echo '-------------------------------------------------'
-      echo '---------------- ls -l ~/.rbenv/shims -----------'
-      ls -l ~/.rbenv/shims
-      echo '-------------------------------------------------'
-      echo '---------------- echo $PATH ---------------------'
-      echo $PATH
-      echo '-------------------------------------------------'
-      echo '---------------- which jruby --------------------'
-      which jruby
-      echo '-------------------------------------------------'
-      echo '---------------- which ruby ---------------------'
-      which ruby
-      echo '-------------------------------------------------'
-      echo '---------------- rbenv version ------------------'
-      rbenv version
-      echo '-------------------------------------------------'
-      echo '---------------- ruby --version -----------------'
-      ruby --version
-      echo '-------------------------------------------------'
-    noProfile: false
-    noRc: false
-  displayName: 'Install rbenv'
+      # echo 'eval "$(rbenv init -)"' >> ~/.bashrc
 
 - task: Bash@3
+  displayName: 'Install JRuby'
   inputs:
     targetType: 'inline'
     script: |
       rbenv install jruby-9.2.5.0
       rbenv global jruby-9.2.5.0
-      echo '---------------- ~/.bashrc ----------------'
-      cat ~/.bashrc
-      echo '-------------------------------------------------'
-      echo '---------------- ls -l ~/.rbenv/shims -----------'
-      ls -l ~/.rbenv/shims
-      echo '-------------------------------------------------'
-      echo '---------------- echo $PATH ---------------------'
-      echo $PATH
-      echo '-------------------------------------------------'
-      echo '---------------- which jruby --------------------'
-      which jruby
-      echo '-------------------------------------------------'
-      echo '---------------- which ruby ---------------------'
-      which ruby
-      echo '-------------------------------------------------'
-      echo '---------------- rbenv version ------------------'
-      rbenv version
-      echo '-------------------------------------------------'
-      echo '---------------- ruby --version -----------------'
-      ruby --version
-      echo '-------------------------------------------------'
-    noProfile: false
-    noRc: false
-  displayName: 'Install JRuby'
+
 # - bash: |
 #     rbenv install jruby-9.2.5.0
 #     rbenv global jruby-9.2.5.0
@@ -103,61 +50,37 @@ steps:
     # source ~/.bash_profile
 
 - task: Bash@3
+  displayName: 'Install bundler'
   inputs:
     targetType: 'inline'
     script: |
       eval "$(rbenv init -)"
-      echo '---------------- ~/.bashrc ----------------'
-      cat ~/.bashrc
-      echo '-------------------------------------------------'
-      echo '---------------- ls -l ~/.rbenv/shims -----------'
-      ls -l ~/.rbenv/shims
-      echo '-------------------------------------------------'
-      echo '---------------- echo $PATH ---------------------'
-      echo $PATH
-      echo '-------------------------------------------------'
-      echo '---------------- which jruby --------------------'
-      which jruby
-      echo '-------------------------------------------------'
-      echo '---------------- which ruby ---------------------'
-      which ruby
-      echo '-------------------------------------------------'
-      echo '---------------- rbenv version ------------------'
-      rbenv version
-      echo '-------------------------------------------------'
-      echo '---------------- ruby --version -----------------'
-      ruby --version
-      echo '-------------------------------------------------'
       jruby -S gem install bundler
-    noProfile: false
-    noRc: false
-  displayName: 'Install bundler'
+      
 # - bash: |
 #     jruby -S gem install bundler
 #   displayName: 'Install bundler'
 #   noProfile: false
 - task: Bash@3
+  displayName: 'Install dependencies'
   inputs:
     targetType: 'inline'
     script: |
       eval "$(rbenv init -)"
       jruby -S bundle install
-    noProfile: false
-    noRc: false
-  displayName: 'Install dependencies'
+
 # - bash: |
 #     jruby -S bundle install
 #   displayName: 'Install dependencies'
 #   noProfile: false
 - task: Bash@3
+  displayName: 'Run tests'
   inputs:
     targetType: 'inline'
     script: |
       eval "$(rbenv init -)"
       jruby -S bundle exec rspec
-    noProfile: false
-    noRc: false
-  displayName: 'Run tests'
+
 # - bash: |
 #     jruby -S bundle exec rspec
 #   displayName: 'Run tests'
