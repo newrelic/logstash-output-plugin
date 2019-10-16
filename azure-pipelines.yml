@@ -10,21 +10,23 @@ pool:
   vmImage: 'macOS-latest'
 
 steps:
-- task: UseRubyVersion@0
-  inputs:
-    versionSpec: '>= 2.5'
-    addToPath: true
+# - task: UseRubyVersion@0
+#   inputs:
+#     versionSpec: '>= 2.5'
+#     addToPath: true
 
-- script: |
+- bash: |
     brew update
     brew install rbenv
     echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
   displayName: 'Install rbenv'
+  noProfile: false
 
-- script: |
+- bash: |
     rbenv install jruby-9.2.5.0
     rbenv global jruby-9.2.5.0
   displayName: 'Install JRuby'
+  noProfile: false
 
 # - script: |
 #     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
@@ -40,22 +42,20 @@ steps:
 
     # source ~/.bashrc
     # source ~/.bash_profile
-- script: |
-    source ~/.bash_profile
+- bash: |
     jruby -S gem install bundler
   displayName: 'Install bundler'
+  noProfile: false
 
-- script: |
-    source ~/.bash_profile
+- bash: |
     jruby -S bundle install
   displayName: 'Install dependencies'
+  noProfile: false
 
-    # source ~/.bashrc
-    # source ~/.bash_profile
-- script: |
-    source ~/.bash_profile
+- bash: |
     jruby -S bundle exec rspec
   displayName: 'Run tests'
+  noProfile: false
 
 # - task: PublishTestResults@2
 #   condition: succeededOrFailed()
