@@ -24,6 +24,8 @@ steps:
       brew install rbenv
       echo '' >> ~/.bash_profile
       echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
+      echo '' >> ~/.bash_profile
+      echo 'echo "Hello from ~/.bash_profile"' >> ~/.bash_profile
       echo '---------------- ~/.bash_profile ----------------'
       cat ~/.bash_profile
       echo '-------------------------------------------------'
@@ -54,6 +56,9 @@ steps:
       rbenv global jruby-9.2.5.0
       echo '---------------- ~/.bash_profile ----------------'
       cat ~/.bash_profile
+      echo '-------------------------------------------------'
+      echo '---------------- cat ~/.rbenv/shims -------------'
+      cat ~/.rbenv/shims
       echo '-------------------------------------------------'
       echo '---------------- which jruby --------------------'
       which jruby
