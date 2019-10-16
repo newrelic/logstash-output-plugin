@@ -4,7 +4,7 @@ $:.unshift lib unless $:.include?(lib)
 require 'logstash/outputs/newrelic_version/version'
 
 Gem::Specification.new do |s|
-  s.name          = 'logstash-output-newrelic'
+  s.name          = 'test-nr-deploy'
   s.version       = LogStash::Outputs::NewRelicVersion::VERSION
   s.licenses      = ['Apache-2.0']
   s.summary       = "Sends Lostash events to New Relic"
