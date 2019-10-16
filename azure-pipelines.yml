@@ -22,6 +22,7 @@ steps:
     script: |
       brew update
       brew install rbenv
+      echo '' >> ~/.bash_profile
       echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
       echo '---------------- ~/.bash_profile ----------------'
       cat ~/.bash_profile
