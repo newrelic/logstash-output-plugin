@@ -106,6 +106,7 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      eval "$(rbenv init -)"
       echo '---------------- ~/.bashrc ----------------'
       cat ~/.bashrc
       echo '-------------------------------------------------'
@@ -139,6 +140,7 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      eval "$(rbenv init -)"
       jruby -S bundle install
     noProfile: false
     noRc: false
@@ -151,6 +153,7 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      eval "$(rbenv init -)"
       jruby -S bundle exec rspec
     noProfile: false
     noRc: false
