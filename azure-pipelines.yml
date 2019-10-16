@@ -42,21 +42,19 @@ steps:
     jruby -S bundle install
   displayName: 'Install dependencies'
 
-- script: jruby -S bundle exec rake
-  displayName: 'bundle exec rake'
-# - script: |
-#     source ~/.bashrc
-#     source ~/.bash_profile
-#     jruby -S bundle exec rspec spec --format RspecJunitFormatter --out test_results/TEST-rspec.xml
-#   displayName: 'Run tests'
+- script: |
+    source ~/.bashrc
+    source ~/.bash_profile
+    jruby -S bundle exec rspec spec --format RspecJunitFormatter --out test_results/TEST-rspec.xml
+  displayName: 'Run tests'
 
-- task: PublishTestResults@2
-  condition: succeededOrFailed()
-  inputs:
-    testResultsFiles: '**/test-*.xml'
-    testRunTitle: 'Ruby tests'
 # - task: PublishTestResults@2
+#   condition: succeededOrFailed()
 #   inputs:
-#     testResultsFormat: 'JUnit'
-#     testResultsFiles: '**/TEST-*.xml'
-#     testRunTitle: 'Rspec'
+#     testResultsFiles: '**/test-*.xml'
+#     testRunTitle: 'Ruby tests'
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/TEST-*.xml'
+    testRunTitle: 'Rspec'
