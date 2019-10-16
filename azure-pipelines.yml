@@ -18,7 +18,7 @@ steps:
 - script: |
     brew update
     brew install rbenv
-    eval "$(rbenv init -)"
+    echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
   displayName: 'Install rbenv'
 
 - script: |
@@ -41,16 +41,19 @@ steps:
     # source ~/.bashrc
     # source ~/.bash_profile
 - script: |
+    source ~/.bash_profile
     jruby -S gem install bundler
   displayName: 'Install bundler'
 
 - script: |
+    source ~/.bash_profile
     jruby -S bundle install
   displayName: 'Install dependencies'
 
     # source ~/.bashrc
     # source ~/.bash_profile
 - script: |
+    source ~/.bash_profile
     jruby -S bundle exec rspec
   displayName: 'Run tests'
 
