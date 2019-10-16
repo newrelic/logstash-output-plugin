@@ -79,7 +79,7 @@ steps:
     targetType: 'inline'
     script: |
       eval "$(rbenv init -)"
-      jruby -S bundle exec rspec
+      jruby -S bundle exec rspec --format RspecJunitFormatter  --out test-results.xml
 
 # - bash: |
 #     jruby -S bundle exec rspec
@@ -94,5 +94,5 @@ steps:
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
-    testResultsFiles: '**/TEST-*.xml'
+    testResultsFiles: 'test-results.xml'
     testRunTitle: 'Rspec'
