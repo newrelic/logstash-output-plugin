@@ -28,27 +28,6 @@ steps:
       rbenv install jruby-9.2.5.0
       rbenv global jruby-9.2.5.0
 
-# - bash: |
-#     rbenv install jruby-9.2.5.0
-#     rbenv global jruby-9.2.5.0
-#   displayName: 'Install JRuby'
-#   noProfile: false
-
-# - script: |
-#     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-#   displayName: 'install rbenv'
-
-# - script: |
-#     cd ~/.rbenv && src/configure && make -C src
-#   displayName: 'move rbenv'
-
-# - script: |
-#     echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
-#   displayName: 'add rbenv to path'
-
-    # source ~/.bashrc
-    # source ~/.bash_profile
-
 - task: Bash@3
   displayName: 'Install bundler'
   inputs:
@@ -57,10 +36,6 @@ steps:
       eval "$(rbenv init -)"
       jruby -S gem install bundler
       
-# - bash: |
-#     jruby -S gem install bundler
-#   displayName: 'Install bundler'
-#   noProfile: false
 - task: Bash@3
   displayName: 'Install dependencies'
   inputs:
@@ -69,10 +44,6 @@ steps:
       eval "$(rbenv init -)"
       jruby -S bundle install
 
-# - bash: |
-#     jruby -S bundle install
-#   displayName: 'Install dependencies'
-#   noProfile: false
 - task: Bash@3
   displayName: 'Run tests'
   inputs:
@@ -81,16 +52,6 @@ steps:
       eval "$(rbenv init -)"
       jruby -S bundle exec rspec --format RspecJunitFormatter  --out test-results.xml
 
-# - bash: |
-#     jruby -S bundle exec rspec
-#   displayName: 'Run tests'
-#   noProfile: false
-
-# - task: PublishTestResults@2
-#   condition: succeededOrFailed()
-#   inputs:
-#     testResultsFiles: '**/test-*.xml'
-#     testRunTitle: 'Ruby tests'
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
