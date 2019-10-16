@@ -40,17 +40,17 @@ steps:
     # source ~/.bashrc
     # source ~/.bash_profile
 - script: |
-    jruby -S gem install bundler
+    ruby -S gem install bundler
   displayName: 'Install bundler'
 
 - script: |
-    jruby -S bundle install
+    ruby -S bundle install
   displayName: 'Install dependencies'
 
     # source ~/.bashrc
     # source ~/.bash_profile
 - script: |
-    jruby -S bundle exec rspec
+    ruby -S bundle exec rspec
   displayName: 'Run tests'
 
 # - task: PublishTestResults@2
