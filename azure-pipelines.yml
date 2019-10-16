@@ -17,8 +17,13 @@ steps:
 
 - script: |
     brew update
-    brew install jruby
-  displayName: 'Install jruby'
+    brew install rbenv
+  displayName: 'Install rbenv'
+
+- script: |
+    rbenv install jruby-9.2.5.0
+    rbenv local jruby-9.2.5.0
+  displayName: 'Install JRuby'
 
 # - script: |
 #     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
@@ -32,19 +37,19 @@ steps:
 #     echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
 #   displayName: 'add rbenv to path'
 
+    # source ~/.bashrc
+    # source ~/.bash_profile
 - script: |
-    source ~/.bashrc
-    source ~/.bash_profile
     jruby -S gem install bundler
-  displayName: 'jruby install bundler'
+  displayName: 'Install bundler'
 
 - script: |
     jruby -S bundle install
   displayName: 'Install dependencies'
 
+    # source ~/.bashrc
+    # source ~/.bash_profile
 - script: |
-    source ~/.bashrc
-    source ~/.bash_profile
     jruby -S bundle exec rspec
   displayName: 'Run tests'
 
