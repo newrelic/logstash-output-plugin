@@ -1,15 +1,13 @@
 trigger:
 - master
 
+pr:
+- master
+
 pool:
   vmImage: 'macOS-latest'
 
 steps:
-- task: DownloadSecureFile@1
-  name: "rubyGemsCredentials"
-  inputs:
-    secureFile: 'credentials'
-
 - task: Bash@3
   displayName: 'Install rbenv'
   inputs:
@@ -56,22 +54,3 @@ steps:
     testResultsFormat: 'JUnit'
     testResultsFiles: 'test-results.xml'
     testRunTitle: 'Rspec'
-
-- task: Bash@3
-  displayName: 'Build gem'
-  inputs:
-    targetType: 'inline'
-    script: |
-      eval "$(rbenv init -)"
-      jruby -S gem build logstash-output-newrelic.gemspec
-
-- task: Bash@3
-  displayName: 'Publish gem to RubyGems'
-  inputs:
-    targetType: 'inline'
-    script: |
-      eval "$(rbenv init -)"
-      mv $(rubyGemsCredentials.secureFilePath) ~/.gem/credentials
-      sudo chmod 600 ~/.gem/credentials
-      jruby -S gem push logstash-output-newrelic-*.gem
-    
