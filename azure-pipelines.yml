@@ -3,6 +3,7 @@ trigger:
 
 pr:
 - master
+- releases/*
 
 pool:
   vmImage: 'macOS-latest'
