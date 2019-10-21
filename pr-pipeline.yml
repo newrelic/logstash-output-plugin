@@ -1,0 +1,55 @@
+pr:
+  branches:
+    include:
+      - '*'
+
+pool:
+  vmImage: 'macOS-latest'
+
+steps:
+- task: Bash@3
+  displayName: 'Install rbenv'
+  inputs:
+    targetType: 'inline'
+    script: |
+      brew update
+      brew install rbenv
+      # echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+
+- task: Bash@3
+  displayName: 'Install JRuby'
+  inputs:
+    targetType: 'inline'
+    script: |
+      rbenv install jruby-9.2.5.0
+      rbenv global jruby-9.2.5.0
+
+- task: Bash@3
+  displayName: 'Install bundler'
+  inputs:
+    targetType: 'inline'
+    script: |
+      eval "$(rbenv init -)"
+      jruby -S gem install bundler
+      
+- task: Bash@3
+  displayName: 'Install dependencies'
+  inputs:
+    targetType: 'inline'
+    script: |
+      eval "$(rbenv init -)"
+      jruby -S bundle install
+
+- task: Bash@3
+  displayName: 'Run tests'
+  inputs:
+    targetType: 'inline'
+    script: |
+      eval "$(rbenv init -)"
+      jruby -S bundle exec rspec --format RspecJunitFormatter  --out test-results.xml
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: 'test-results.xml'
+    testRunTitle: 'Rspec'
