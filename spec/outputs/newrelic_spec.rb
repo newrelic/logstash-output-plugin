@@ -142,7 +142,7 @@ describe LogStash::Outputs::NewRelic do
       wait_for(a_request(:post, base_uri)
       .with { |request|
         data = multiple_gzipped_messages(request.body)[0]
-        data['common']['attributes']['plugin']['type'] == 'logstash' &&
+        data['common']['attributes']['plugin']['type'] == 'logstashes' &&
         data['common']['attributes']['plugin']['version'] == LogStash::Outputs::NewRelicVersion::VERSION })
       .to have_been_made
     end
