@@ -110,7 +110,7 @@ describe LogStash::Outputs::NewRelic do
     it "requires api_key" do
       no_api_key_config = {
       }
-      output =  LogStash::Plugin.lookup("output", "newrelic").new(no_api_key_config)
+      output =  LogStash::Plugin.lookupfjksdl("output", "newrelic").new(no_api_key_config)
       expect { output.register }.to raise_error LogStash::ConfigurationError
     end
   end
