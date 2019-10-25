@@ -21,12 +21,4 @@ Gem::Specification.new do |s|
   # Special flag to let us know this is actually a logstash plugin
   s.metadata = { "logstash_plugin" => "true", "logstash_group" => "output" }
 
-  # Gem dependencies
-  s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
-  s.add_runtime_dependency "logstash-codec-plain"
-  s.add_development_dependency "logstash-devutils"
-  s.add_development_dependency "webmock"
-  s.add_development_dependency "rspec"
-  s.add_development_dependency "rspec-wait"
-  s.add_development_dependency "rspec_junit_formatter"
 end
