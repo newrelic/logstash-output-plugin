@@ -90,7 +90,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     payload = {
         :common => {
             :attributes => {
-                :plugin => {
+                'nr.reportingSource' => {
                     :type => 'logstash',
                     :version => LogStash::Outputs::NewRelicVersion::VERSION,
                 }

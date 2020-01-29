@@ -142,8 +142,8 @@ describe LogStash::Outputs::NewRelic do
       wait_for(a_request(:post, base_uri)
       .with { |request|
         data = multiple_gzipped_messages(request.body)[0]
-        data['common']['attributes']['plugin']['type'] == 'logstash' &&
-        data['common']['attributes']['plugin']['version'] == LogStash::Outputs::NewRelicVersion::VERSION })
+        data['common']['attributes']['nr.reportingSource']['type'] == 'logstash' &&
+        data['common']['attributes']['nr.reportingSource']['version'] == LogStash::Outputs::NewRelicVersion::VERSION })
       .to have_been_made
     end
 
@@ -219,6 +219,32 @@ describe LogStash::Outputs::NewRelic do
           message['message'] == 'Test message' &&
           message['attributes']['other'] == other_json })
         .to have_been_made
+    end
+
+    it "handles message with non-Latin-1 characters" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => 'ういじゅん' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+                   .with { |request|
+                     message = single_gzipped_message(request.body)
+                     message['message'] == 'ういじゅん' })
+          .to have_been_made
+    end
+
+    it "handles message JSON non-Latin-1 characters" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ :message => 'ういじゅん' })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+                   .with { |request|
+                     message = single_gzipped_message(request.body)
+                     message['message'] == 'ういじゅん' })
+          .to have_been_made
     end
 
     it "handles messages without a 'message' field" do
