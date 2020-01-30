@@ -32,6 +32,7 @@ describe LogStash::Outputs::NewRelic do
       @newrelic_output.shutdown
     end
   end
+
   context "license key tests" do
     it "sets license key when given in the header" do
       stub_request(:any, base_uri).to_return(status: 200)
