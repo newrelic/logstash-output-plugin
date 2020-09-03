@@ -6,6 +6,7 @@ require 'uri'
 require 'zlib'
 require 'json'
 require 'java'
+require_relative './config/bigdecimal_patch'
 
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
