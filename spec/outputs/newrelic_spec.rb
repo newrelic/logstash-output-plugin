@@ -21,7 +21,6 @@ describe LogStash::Outputs::NewRelic do
     }
   }
 
-
   before(:each) do
     @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
     @newrelic_output.register
@@ -32,6 +31,7 @@ describe LogStash::Outputs::NewRelic do
       @newrelic_output.shutdown
     end
   end
+
   context "license key tests" do
     it "sets license key when given in the header" do
       stub_request(:any, base_uri).to_return(status: 200)
@@ -278,6 +278,50 @@ describe LogStash::Outputs::NewRelic do
       wait_for(a_request(:post, base_uri)
         .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 2' })
         .to have_been_made
+    end
+  end
+
+  context "JSON serialization" do
+    it "serializes floating point numbers as floating point numbers" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ "floatingpoint" => 0.12345 })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request|
+          message = single_gzipped_message(request.body)
+          message['attributes']['floatingpoint'] == 0.12345
+        }
+      ).to have_been_made
+    end
+
+    it "serializes BigDecimals as floating point numbers" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ "bigdecimal" => BigDecimal('0.12345') })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request|
+          message = single_gzipped_message(request.body)
+          message['attributes']['bigdecimal'] == 0.12345
+        }
+      ).to have_been_made
+    end
+
+    it "serializes NaN as null" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({ "nan" => BigDecimal('NaN') })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with { |request|
+          message = single_gzipped_message(request.body)
+          message['attributes']['nan'] == nil
+        }
+      ).to have_been_made
     end
   end
 end
