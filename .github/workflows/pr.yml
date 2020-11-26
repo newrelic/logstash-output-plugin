@@ -1,0 +1,28 @@
+name: New Relic Logstash Output Plugin - Pull Request
+
+on: [pull_request]
+
+jobs:
+  ci:
+    name: Continuous Integration pipeline
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: jruby-9.2.13.0
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Run unit tests
+        run: |
+          jruby -S bundle exec rspec --format RspecJunitFormatter  --out test-results.xml
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1.5
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: test-results.xml
