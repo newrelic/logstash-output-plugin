@@ -33,3 +33,9 @@ jobs:
 
       - name: Build gem
         run: jruby -S gem build logstash-output-newrelic.gemspec
+
+      - name: Publish logstash-output-newrelic to rubygems.org
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+        run: |
+          jruby -S gem push logstash-output-newrelic-*.gem
