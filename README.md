@@ -1,3 +1,5 @@
+[![Community Plus header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Plus.png)](https://opensource.newrelic.com/oss-category/#community-plus)
+
 # New Relic Logstash Output Plugin
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash) that outputs logs to New Relic.
@@ -65,7 +67,7 @@ When using this plugin in the EU override the base_uri with `https://log-api.eu.
 
 ## Testing
 
-An easy way to test the plugin is to make sure Logstash is getting input from a log file you 
+An easy way to test the plugin is to make sure Logstash is getting input from a log file you
 can write to. Something like this in your logstash.conf:
 ```
 input {
