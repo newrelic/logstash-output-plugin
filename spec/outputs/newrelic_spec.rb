@@ -279,6 +279,61 @@ describe LogStash::Outputs::NewRelic do
         .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 2' })
         .to have_been_made
     end
+
+    it "retry when receive retryable http error code" do
+      stub_request(:any, base_uri)
+        .to_return(status: 500)
+        .to_return(status: 200)
+
+      event1 = LogStash::Event.new({ "message" => "Test message 1" })
+      @newrelic_output.multi_receive([event1])
+
+      wait_for(a_request(:post, base_uri)
+                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
+        .to have_been_made.times(2)
+    end
+
+    it "not retry when receive a non retryable http error code" do
+      stub_request(:any, base_uri)
+        .to_return(status: 401)
+
+      event1 = LogStash::Event.new({ "message" => "Test message 1" })
+      @newrelic_output.multi_receive([event1])
+      # Due the async behavior we need to wait to be sure that the method was not called more than 1 time
+      sleep(2)
+      wait_for(a_request(:post, base_uri)
+                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
+        .to have_been_made.times(1)
+    end
+
+    it "not retry when receive retry is disable" do
+      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(
+        { "base_uri" => base_uri, "license_key" => api_key, "enable_retry" => 'false' }
+      )
+      @newrelic_output.register
+      stub_request(:any, base_uri)
+        .to_return(status: 500)
+
+      event1 = LogStash::Event.new({ "message" => "Test message 1" })
+      @newrelic_output.multi_receive([event1])
+      # Due the async behavior we need to wait to be sure that the method was not called more than 1 time
+      sleep(2)
+      wait_for(a_request(:post, base_uri)
+                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
+        .to have_been_made.times(1)
+    end
+
+    it "retry when receive a not expected exception" do
+      stub_request(:any, base_uri)
+        .to_raise(StandardError.new("from test"))
+        .to_return(status: 200)
+
+      event1 = LogStash::Event.new({ "message" => "Test message 1" })
+      @newrelic_output.multi_receive([event1])
+      wait_for(a_request(:post, base_uri)
+                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
+        .to have_been_made.times(2)
+    end
   end
 
   context "JSON serialization" do
