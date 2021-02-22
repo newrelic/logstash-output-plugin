@@ -57,7 +57,8 @@ Exactly one of the following:
 |---|---|---|
 | concurrent_requests | The number of threads to make requests from | 1 |
 | base_uri | New Relic ingestion endpoint | https://log-api.newrelic.com/log/v1 |
-
+| enable_retry | Enable/Disable retry policy | true |
+| max_retry | Number of retries made every second before dropping logs. | 3 |
 
 ### EU plugin configuration
 
