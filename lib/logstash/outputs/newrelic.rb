@@ -6,6 +6,7 @@ require 'uri'
 require 'zlib'
 require 'json'
 require 'java'
+require 'set'
 require_relative './config/bigdecimal_patch'
 require_relative './exception/error'
 
@@ -13,14 +14,15 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
   java_import java.util.concurrent.Semaphore;
 
+  NON_RETRYABLE_CODES = Set[401, 403]
+
   config_name "newrelic"
 
   config :api_key, :validate => :password, :required => false
   config :license_key, :validate => :password, :required => false
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://log-api.newrelic.com/log/v1"
-  config :enable_retry, :validate => :boolean, :default => true
-  config :max_retry, :validate => :number, :default => 3
+  config :max_retries, :validate => :number, :default => 3
 
   public
 
@@ -118,9 +120,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   def handle_response(response)
     if !(200 <= response.code.to_i && response.code.to_i < 300)
-      raise Error::BadResponseCodeError.new(
-        response.code.to_i, @base_uri, response.message
-      )
+      raise Error::BadResponseCodeError.new(response.code.to_i, @base_uri)
     end
   end
 
@@ -159,11 +159,11 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   end
 
   def should_retry(retries)
-    @enable_retry && retries < @max_retry
+    retries < @max_retries
   end
 
   def is_retryable_code(response_error)
     error_code = response_error.response_code
-    error_code != 401 && error_code != 403
+    !NON_RETRYABLE_CODES.include?(error_code)
   end
 end # class LogStash::Outputs::NewRelic

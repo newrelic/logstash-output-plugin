@@ -306,9 +306,9 @@ describe LogStash::Outputs::NewRelic do
         .to have_been_made.times(1)
     end
 
-    it "not retry when receive retry is disable" do
+    it "not retries when retry is disabled" do
       @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(
-        { "base_uri" => base_uri, "license_key" => api_key, "enable_retry" => 'false' }
+        { "base_uri" => base_uri, "license_key" => api_key, "max_retries" => '0' }
       )
       @newrelic_output.register
       stub_request(:any, base_uri)
