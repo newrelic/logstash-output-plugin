@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.name          = 'logstash-output-newrelic'
   s.version       = LogStash::Outputs::NewRelicVersion::VERSION
   s.licenses      = ['Apache-2.0']
-  s.summary       = "Sends Lostash events to New Relic"
+  s.summary       = "Sends Logstash events to New Relic"
   s.homepage      = 'https://github.com/newrelic/logstash-output-plugin'
   s.authors       = ['New Relic Logging Team']
   s.email         = 'logging-team@newrelic.com'
