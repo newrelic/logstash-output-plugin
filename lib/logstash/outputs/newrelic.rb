@@ -144,16 +144,24 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     rescue => e
       # Stuff that should never happen
       # For all other errors print out full issues
-      @logger.error(
-        "An unknown error occurred sending a bulk request to NewRelic.",
-        :error_message => e.message,
-        :error_class => e.class.name,
-        :backtrace => e.backtrace
-      )
       if (should_retry(retries))
+        @logger.warn(
+          "An unknown error occurred sending a bulk request to NewRelic. Retiring...",
+          :retries => " attempt #{retries} of #{@max_retries}",
+          :error_message => e.message,
+          :error_class => e.class.name,
+          :backtrace => e.backtrace
+        )
         retries += 1
         sleep(1)
         retry
+      else
+        @logger.error(
+          "An unknown error occurred sending a bulk request to NewRelic. Max of attempt reached, dropping logs.",
+          :error_message => e.message,
+          :error_class => e.class.name,
+          :backtrace => e.backtrace
+        )
       end
     end
   end
