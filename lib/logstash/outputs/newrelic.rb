@@ -6,11 +6,15 @@ require 'uri'
 require 'zlib'
 require 'json'
 require 'java'
+require 'set'
 require_relative './config/bigdecimal_patch'
+require_relative './exception/error'
 
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
   java_import java.util.concurrent.Semaphore;
+
+  NON_RETRYABLE_CODES = Set[401, 403]
 
   config_name "newrelic"
 
@@ -18,6 +22,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   config :license_key, :validate => :password, :required => false
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://log-api.newrelic.com/log/v1"
+  config :max_retries, :validate => :number, :default => 3
 
   public
 
@@ -27,12 +32,12 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       raise LogStash::ConfigurationError, "Must provide a license key or api key", caller
     end
     auth = {
-      @api_key.nil? ? 'X-License-Key': 'X-Insert-Key' => 
-      @api_key.nil? ? @license_key.value : @api_key.value
+      @api_key.nil? ? 'X-License-Key' : 'X-Insert-Key' =>
+        @api_key.nil? ? @license_key.value : @api_key.value
     }
     @header = {
-        'X-Event-Source' => 'logs',
-        'Content-Encoding' => 'gzip'
+      'X-Event-Source' => 'logs',
+      'Content-Encoding' => 'gzip'
     }.merge(auth).freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
@@ -59,11 +64,10 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
   end
 
-
   def encode(event_hash)
     log_message_hash = {
-        # non-intrinsic attributes get put into 'attributes'
-        :attributes => event_hash
+      # non-intrinsic attributes get put into 'attributes'
+      :attributes => event_hash
     }
 
     # intrinsic attributes go at the top level
@@ -89,15 +93,15 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       payload.push(encode(event.to_hash))
     end
     payload = {
-        :common => {
-            :attributes => {
-                :plugin => {
-                    :type => 'logstash',
-                    :version => LogStash::Outputs::NewRelicVersion::VERSION,
-                }
-            }
-        },
-        :logs => payload
+      :common => {
+        :attributes => {
+          :plugin => {
+            :type => 'logstash',
+            :version => LogStash::Outputs::NewRelicVersion::VERSION,
+          }
+        }
+      },
+      :logs => payload
     }
     @semaphor.acquire()
     execute = @executor.java_method :submit, [java.lang.Runnable]
@@ -116,17 +120,58 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   def handle_response(response)
     if !(200 <= response.code.to_i && response.code.to_i < 300)
-      @logger.error("Request returned " + response.code + " " + response.body)
+      raise Error::BadResponseCodeError.new(response.code.to_i, @base_uri)
     end
   end
 
   def nr_send(payload)
-    http = Net::HTTP.new(@end_point.host, 443)
-    request = Net::HTTP::Post.new(@end_point.request_uri)
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    @header.each {|k, v| request[k] = v}
-    request.body = payload
-    handle_response(http.request(request))
+    retries = 0
+    begin
+      http = Net::HTTP.new(@end_point.host, 443)
+      request = Net::HTTP::Post.new(@end_point.request_uri)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      @header.each { |k, v| request[k] = v }
+      request.body = payload
+      handle_response(http.request(request))
+    rescue Error::BadResponseCodeError => e
+      @logger.error(e.message)
+      if (should_retry(retries) && is_retryable_code(e))
+        retries += 1
+        sleep(1)
+        retry
+      end
+    rescue => e
+      # Stuff that should never happen
+      # For all other errors print out full issues
+      if (should_retry(retries))
+        retries += 1
+        @logger.warn(
+          "An unknown error occurred sending a bulk request to NewRelic. Retrying...",
+          :retries => "attempt #{retries} of #{@max_retries}",
+          :error_message => e.message,
+          :error_class => e.class.name,
+          :backtrace => e.backtrace
+        )
+        sleep(1)
+        retry
+      else
+        @logger.error(
+          "An unknown error occurred sending a bulk request to NewRelic. Maximum of attempts reached, dropping logs.",
+          :error_message => e.message,
+          :error_class => e.class.name,
+          :backtrace => e.backtrace
+        )
+      end
+    end
+  end
+
+  def should_retry(retries)
+    retries < @max_retries
+  end
+
+  def is_retryable_code(response_error)
+    error_code = response_error.response_code
+    !NON_RETRYABLE_CODES.include?(error_code)
   end
 end # class LogStash::Outputs::NewRelic
