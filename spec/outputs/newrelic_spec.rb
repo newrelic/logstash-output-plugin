@@ -398,5 +398,40 @@ describe LogStash::Outputs::NewRelic do
       wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(4)
       wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(4)
     end
+
+    it "does not split a log and does not perform any request if it exceeds 1MB once compressed" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      # This file contains a SINGLE random log record that upon compressed ends up being about 1.8MB
+      # This payload cannot be further split, so we expect no call being made to the Logs API
+      file_path = 'spec/outputs/single_input_message_exceeeding_1MB_once_compressed.json'
+
+      logstash_events = []
+      File.foreach(file_path) do |line|
+        logstash_events << LogStash::Event.new(JSON.parse(line))
+      end
+
+      @newrelic_output.multi_receive(logstash_events)
+
+      wait_for(a_request(:post, base_uri)).not_to have_been_made
+    end
+
+    it "does a single request when the payload is below 1MB" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      # This file contains a large amount of random log record messages that upon compressed ends up being about 0.88MB
+      # Given that this is below the 1MB allowed by the Logs API, a single request will be made
+      file_path = 'spec/outputs/input_messages_resulting_in_880KB_compressed_payload.json'
+
+      logstash_events = []
+      File.foreach(file_path) do |line|
+        logstash_events << LogStash::Event.new(JSON.parse(line))
+      end
+
+      @newrelic_output.multi_receive(logstash_events)
+
+      wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(1)
+      wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(1)
+    end
   end
 end
