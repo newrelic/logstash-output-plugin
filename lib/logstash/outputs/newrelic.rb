@@ -43,7 +43,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
-    @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
@@ -67,34 +66,40 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
   end
 
-  def encode(event_hash)
-    log_message_hash = {
-      # non-intrinsic attributes get put into 'attributes'
-      :attributes => event_hash
-    }
+  def to_NR_logs(logstash_events)
+    nr_logs = []
 
-    # intrinsic attributes go at the top level
-    if event_hash['message']
-      log_message_hash['message'] = event_hash['message']
-      log_message_hash[:attributes].delete('message')
-    end
-    if event_hash['timestamp']
-      log_message_hash['timestamp'] = event_hash['timestamp']
-      log_message_hash[:attributes].delete('timestamp')
+    logstash_events.each do |logstash_event|
+      event_hash = logstash_event.to_hash
+
+      nr_log_message_hash = {
+        # non-intrinsic attributes get put into 'attributes'
+        :attributes => event_hash
+      }
+
+      # intrinsic attributes go at the top level
+      if event_hash['message']
+        nr_log_message_hash['message'] = event_hash['message']
+        nr_log_message_hash[:attributes].delete('message')
+      end
+      if event_hash['timestamp']
+        nr_log_message_hash['timestamp'] = event_hash['timestamp']
+        nr_log_message_hash[:attributes].delete('timestamp')
+      end
+
+      nr_logs.push(nr_log_message_hash)
     end
 
-    log_message_hash
+    nr_logs
   end
 
-  def multi_receive(events)
-    if events.size == 0
+  def multi_receive(logstash_events)
+    if logstash_events.size == 0
       return
     end
 
-    payload = []
-    events.each do |event|
-      payload.push(encode(event.to_hash))
-    end
+    logs = to_NR_logs(logstash_events)
+
     payload = {
       :common => {
         :attributes => {
@@ -104,20 +109,17 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
           }
         }
       },
-      :logs => payload
+      :logs => logs
     }
-    @semaphor.acquire()
+
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
-      begin
-        io = StringIO.new
-        gzip = Zlib::GzipWriter.new(io)
-        gzip << [payload].to_json
-        gzip.close
-        nr_send(io.string)
-      ensure
-        @semaphor.release()
-      end
+      puts "Thread ID: #{Thread.current.object_id}"
+      io = StringIO.new
+      gzip = Zlib::GzipWriter.new(io)
+      gzip << [payload].to_json
+      gzip.close
+      nr_send(io.string)
     end
   end
 
