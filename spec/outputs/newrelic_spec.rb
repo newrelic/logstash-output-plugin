@@ -379,4 +379,23 @@ describe LogStash::Outputs::NewRelic do
       ).to have_been_made
     end
   end
+
+  context "payload splitting" do
+    it "splits logs into up to 1MB payloads" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      # This file contains a large amount of random log record messages that upon compressed ends up being about 2.45MB
+      # Each log record is pretty small (no single log exceeds 1MB alone), so, we expect it to perform 3 requests to the API
+      file_path = 'spec/outputs/input_messages_resulting_in_2450KB_compressed_payload.json'
+
+      logstash_events = []
+      File.foreach(file_path) do |line|
+        logstash_events << LogStash::Event.new(JSON.parse(line))
+      end
+
+      @newrelic_output.multi_receive(logstash_events)
+
+      wait_for(a_request(:post, base_uri)).to have_been_made.times(3)
+    end
+  end
 end
