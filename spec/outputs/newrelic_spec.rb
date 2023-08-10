@@ -395,7 +395,8 @@ describe LogStash::Outputs::NewRelic do
 
       @newrelic_output.multi_receive(logstash_events)
 
-      wait_for(a_request(:post, base_uri)).to have_been_made.times(3)
+      wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(4)
+      wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(4)
     end
   end
 end
