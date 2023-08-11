@@ -106,8 +106,8 @@ function build_logstash_image_with_our_plugin {
 }
 
 # Main
-# build_plugin
-# build_logstash_image_with_our_plugin
+build_plugin
+build_logstash_image_with_our_plugin
 run_test
 
 exit 0
