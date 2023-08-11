@@ -1,0 +1,3 @@
+pipeline.workers: 1        # One single worker so we observe all the logs in a single batched request
+pipeline.batch.size: 10    # 10 records at most in each batch
+pipeline.batch.delay: 1000 # Wait 2 seconds before flushing logs

@@ -15,7 +15,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: jruby-9.2.13.0
-      - run: bundle install
+
+      - name: Install dependencies
+        run: bundle install
 
       - name: Run unit tests
         run: jruby -S bundle exec rspec --format RspecJunitFormatter  --out test-results.xml
@@ -25,3 +27,27 @@ jobs:
         if: always()
         with:
           files: test-results.xml
+
+  verify_logstash_e2e:
+    name: Verify plugin works with Logstash 5, 6, 7 and 8
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        logstash_version: [ "5.6.16", "6.8.23", "7.17.12", "8.9.0" ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup JRuby, bundler and install dependencies
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: jruby-9.2.13.0
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Logstash E2E testing
+        run: ./test.sh ${{ matrix.logstash_version }}
+

@@ -1,0 +1,83 @@
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/log/v1",
+    "headers": [
+      {
+        "name": "X-License-Key",
+        "values": ["some-license-key"]
+      },
+      {
+        "name": "X-Event-Source",
+        "values": ["logs"]
+      },
+      {
+        "name": "content-encoding",
+        "values": ["gzip"]
+      }
+    ],
+    "body": {
+      "type": "JSON",
+      "matchType": "STRICT",
+      "json": [
+        {
+          "common": {
+            "attributes": {
+              "plugin": {
+                "type": "logstash",
+                "version": "${json-unit.any-string}"
+              }
+            }
+          },
+          "logs": [
+            {
+              "attributes": {
+                "@version": "${json-unit.any-string}",
+                "path": "/usr/share/logstash/data/logstashtest.log",
+                "@timestamp": "${json-unit.any-string}",
+                "host": "${json-unit.any-string}"
+              },
+              "message": "Hello!"
+            },
+            {
+              "attributes": {
+                "@version": "${json-unit.any-string}",
+                "path": "/usr/share/logstash/data/logstashtest.log",
+                "@timestamp": "${json-unit.any-string}",
+                "host": "${json-unit.any-string}"
+              },
+              "message": "Hello!"
+            },
+            {
+              "attributes": {
+                "@version": "${json-unit.any-string}",
+                "path": "/usr/share/logstash/data/logstashtest.log",
+                "@timestamp": "${json-unit.any-string}",
+                "host": "${json-unit.any-string}"
+              },
+              "message": "Hello!"
+            },
+            {
+              "attributes": {
+                "@version": "${json-unit.any-string}",
+                "path": "/usr/share/logstash/data/logstashtest.log",
+                "@timestamp": "${json-unit.any-string}",
+                "host": "${json-unit.any-string}"
+              },
+              "message": "Hello!"
+            },
+            {
+              "attributes": {
+                "@version": "${json-unit.any-string}",
+                "path": "/usr/share/logstash/data/logstashtest.log",
+                "@timestamp": "${json-unit.any-string}",
+                "host": "${json-unit.any-string}"
+              },
+              "message": "Hello!"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

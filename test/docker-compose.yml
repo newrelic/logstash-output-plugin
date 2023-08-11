@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  mockserver:
+    image: mockserver/mockserver:5.15.0
+    volumes:
+      - "./expectations.json:/tmp/expectations.json"
+      - "./mockserver-ca.pem:/certificates/mockserver-ca.pem"
+      - "./mockserver-ca-private-key.pem:/certificates/mockserver-ca-private-key.pem"
+    ports:
+      # Need to use 443 because our plugin always connects to this port, no matter what
+      - 443:443
+    environment:
+      MOCKSERVER_SERVER_PORT: 443
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: true
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /tmp/expectations.json
+      MOCKSERVER_SSL_CERTIFICATE_DOMAIN_NAME: "mockserver"
+      MOCKSERVER_SSL_SUBJECT_ALTERNATIVE_NAME_DOMAINS: "mockserver"
+      MOCKSERVER_CERTIFICATE_AUTHORITY_X509_CERTIFICATE: /certificates/mockserver-ca.pem
+      MOCKSERVER_CERTIFICATE_AUTHORITY_PRIVATE_KEY: /certificates/mockserver-ca-private-key.pem
+
+  logstash:
+    image: "logstash-${LOGSTASH_VERSION}-with-nr"
+    depends_on:
+      - mockserver
+    volumes:
+      - "./logstash.yml:/usr/share/logstash/config/logstash.yml"
+      - "./logstash.conf:/usr/share/logstash/pipeline/logstash.conf"
+      - "./testdata/logstashtest.log:/usr/share/logstash/data/logstashtest.log"
+      - "./mockserver-ca.pem:/certificates/mockserver-ca.pem"
+    environment:
+      FILE_PATH: /usr/share/logstash/data/logstashtest.log
+      LICENSE_KEY: some-license-key
+      MOCKSERVER_CA_CERT_PATH: /certificates/mockserver-ca.pem
