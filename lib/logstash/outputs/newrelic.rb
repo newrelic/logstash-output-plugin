@@ -13,7 +13,7 @@ require_relative './exception/error'
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
 
-  NON_RETRYABLE_CODES = Set[401, 403]
+  RETRIABLE_CODES = Set[408, 429, 500, 502, 503, 504, 599]
 
   MAX_PAYLOAD_SIZE_BYTES = 1_000_000
 
@@ -197,6 +197,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   def is_retryable_code(response_error)
     error_code = response_error.response_code
-    !NON_RETRYABLE_CODES.include?(error_code)
+    RETRIABLE_CODES.include?(error_code)
   end
 end # class LogStash::Outputs::NewRelic
