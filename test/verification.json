@@ -14,6 +14,10 @@
       {
         "name": "content-encoding",
         "values": ["gzip"]
+      },
+      {
+        "name": "Content-Type",
+        "values": ["application/json"]
       }
     ],
     "body": {
