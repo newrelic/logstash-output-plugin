@@ -12,9 +12,10 @@ require_relative './exception/error'
 
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
-  java_import java.util.concurrent.Semaphore;
 
   NON_RETRYABLE_CODES = Set[401, 403]
+
+  MAX_PAYLOAD_SIZE_BYTES = 1_000_000
 
   config_name "newrelic"
 
@@ -43,7 +44,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
-    @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
@@ -67,34 +67,40 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
   end
 
-  def encode(event_hash)
-    log_message_hash = {
-      # non-intrinsic attributes get put into 'attributes'
-      :attributes => event_hash
-    }
+  def to_nr_logs(logstash_events)
+    logstash_events.map do |logstash_event|
+      event_hash = logstash_event.to_hash
 
-    # intrinsic attributes go at the top level
-    if event_hash['message']
-      log_message_hash['message'] = event_hash['message']
-      log_message_hash[:attributes].delete('message')
-    end
-    if event_hash['timestamp']
-      log_message_hash['timestamp'] = event_hash['timestamp']
-      log_message_hash[:attributes].delete('timestamp')
-    end
+      nr_log_message_hash = {
+        # non-intrinsic attributes get put into 'attributes'
+        :attributes => event_hash
+      }
 
-    log_message_hash
+      # intrinsic attributes go at the top level
+      if event_hash['message']
+        nr_log_message_hash['message'] = event_hash['message']
+        nr_log_message_hash[:attributes].delete('message')
+      end
+      if event_hash['timestamp']
+        nr_log_message_hash['timestamp'] = event_hash['timestamp']
+        nr_log_message_hash[:attributes].delete('timestamp')
+      end
+
+      nr_log_message_hash
+    end
   end
 
-  def multi_receive(events)
-    if events.size == 0
+  def multi_receive(logstash_events)
+    if logstash_events.empty?
       return
     end
 
-    payload = []
-    events.each do |event|
-      payload.push(encode(event.to_hash))
-    end
+    nr_logs = to_nr_logs(logstash_events)
+
+    package_and_send_recursively(nr_logs)
+  end
+
+  def package_and_send_recursively(nr_logs)
     payload = {
       :common => {
         :attributes => {
@@ -104,19 +110,29 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
           }
         }
       },
-      :logs => payload
+      :logs => nr_logs
     }
-    @semaphor.acquire()
+
     execute = @executor.java_method :submit, [java.lang.Runnable]
     execute.call do
-      begin
-        io = StringIO.new
-        gzip = Zlib::GzipWriter.new(io)
-        gzip << [payload].to_json
-        gzip.close
-        nr_send(io.string)
-      ensure
-        @semaphor.release()
+      compressed_payload = StringIO.new
+      gzip = Zlib::GzipWriter.new(compressed_payload)
+      gzip << [payload].to_json
+      gzip.close
+
+      compressed_size = compressed_payload.string.bytesize
+      log_record_count = nr_logs.length
+
+      if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
+        @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
+      elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
+        @logger.debug("Compressed payload size (#{compressed_size}) exceededs maximum packet size (1MB) and will be split in two.")
+        split_index = log_record_count / 2
+        package_and_send_recursively(nr_logs[0...split_index])
+        package_and_send_recursively(nr_logs[split_index..-1])
+      else
+        @logger.debug("Payload compressed size: #{compressed_size}")
+        nr_send(compressed_payload.string)
       end
     end
   end

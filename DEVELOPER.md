@@ -2,12 +2,23 @@
 
 # Getting started
 
-* Install JRuby: `rbenv install jruby-9.2.5.0`
-* Use that JRuby: `rbenv local jruby-9.2.5.0`
+**NOTE for Mac M1 users: ** note that `jruby-9.3.3.0` is the first jruby compatible with Mac M1 processors. In order to
+develop the plugin locally, we recommend using this version. Nevertheless, when building the gem file (in the GH workflows),
+we keep using jruby 9.2.13.0 in order to be backwards-compatible with older Logstash versions.
+
+* Install RVM:
+  * `command curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -`
+  * `\curl -sSL https://get.rvm.io | bash -s stable`
+  * Reopen the terminal for `rvm` command to be available
+* Install JRuby: `rvm install jruby-9.2.13.0`.
+* Use that JRuby: `rvm use jruby-9.2.13.0`
+* Ensure your terminal is using Java 11.
 * Install Bundler gem: `jruby -S gem install bundler`
 
 # Developing
 
+* Ensure you have `logstash` installed locally (required for unit testing): `brew install logstash`
+* Ensure your `logstash` path matches the one in `Gemfile` 
 * Install dependencies: `jruby -S bundle install`
 * Write tests and production code!
 * Bump version: edit version file `version.rb`
