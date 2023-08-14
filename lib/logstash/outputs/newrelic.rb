@@ -12,7 +12,6 @@ require_relative './exception/error'
 
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
-  java_import java.util.concurrent.Semaphore;
 
   NON_RETRYABLE_CODES = Set[401, 403]
 
@@ -68,10 +67,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
   end
 
-  def to_NR_logs(logstash_events)
-    nr_logs = []
-
-    logstash_events.each do |logstash_event|
+  def to_nr_logs(logstash_events)
+    logstash_events.map do |logstash_event|
       event_hash = logstash_event.to_hash
 
       nr_log_message_hash = {
@@ -89,18 +86,16 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
         nr_log_message_hash[:attributes].delete('timestamp')
       end
 
-      nr_logs.push(nr_log_message_hash)
+      nr_log_message_hash
     end
-
-    nr_logs
   end
 
   def multi_receive(logstash_events)
-    if logstash_events.size == 0
+    if logstash_events.empty?
       return
     end
 
-    nr_logs = to_NR_logs(logstash_events)
+    nr_logs = to_nr_logs(logstash_events)
 
     package_and_send_recursively(nr_logs)
   end

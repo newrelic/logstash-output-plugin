@@ -4,6 +4,7 @@ require "logstash/outputs/newrelic"
 require "logstash/outputs/newrelic_version/version"
 require "logstash/codecs/plain"
 require "logstash/event"
+require "thread"
 require "webmock/rspec"
 require "zlib"
 
@@ -381,22 +382,54 @@ describe LogStash::Outputs::NewRelic do
   end
 
   context "payload splitting" do
+
+    def stub_requests_and_capture_msg_ids(captured_msg_ids_accumulator)
+      mutex = Mutex.new
+      stub_request(:any, base_uri).to_return do |request|
+        mutex.synchronize do
+          captured_msg_ids_accumulator.concat(extract_msg_ids(request.body))
+        end
+        { status: 200 }
+      end
+    end
+
+    # Tests using this method expect log messages to contain a field "msgId" in their logs
+    def extract_msg_ids(body)
+      JSON.parse(gunzip(body))[0]['logs'].map do |log|
+        log['attributes']['msgId']
+      end
+    end
+
+    def expect_msg_ids(captured_msg_ids, msgIdsCount)
+      wait_for { captured_msg_ids.length }.to eq(msgIdsCount), "Expected a total of #{msgIdsCount} logs, but found #{captured_msg_ids.length}"
+      sorted_captured_msg_ids = captured_msg_ids.sort
+      for i in 0...msgIdsCount do
+        expect(sorted_captured_msg_ids[i]).to eq(i), "msgId #{i} not found"
+      end
+    end
+
     it "splits logs into up to 1MB payloads" do
-      stub_request(:any, base_uri).to_return(status: 200)
+      captured_msg_ids = []
+      stub_requests_and_capture_msg_ids(captured_msg_ids)
 
-      # This file contains a large amount of random log record messages that upon compressed ends up being about 2.45MB
-      # Each log record is pretty small (no single log exceeds 1MB alone), so, we expect it to perform 3 requests to the API
-      file_path = 'spec/outputs/input_messages_resulting_in_2450KB_compressed_payload.json'
+      # This file contains 17997 random log record messages that upon compressed ends up being about 2.68MB
+      # Each log record is pretty small (no single log exceeds 1MB alone), so, we expect it to perform 4 requests to the API
+      # with
+      file_path = 'spec/outputs/input_17997_messages_resulting_in_2680KB_compressed_payload.json'
 
-      logstash_events = []
-      File.foreach(file_path) do |line|
-        logstash_events << LogStash::Event.new(JSON.parse(line))
+      logstash_events =  File.readlines(file_path).map do |line|
+        LogStash::Event.new(JSON.parse(line))
       end
 
       @newrelic_output.multi_receive(logstash_events)
 
+      # Verify number of requests matches exactly 4. Note that .times() unexpectedly behaves as .at_least_times(), so we
+      # are forced to do this double verification to check the exact number of calls.
       wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(4)
       wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(4)
+
+      # Verify all expected msgIds were received
+      expect_msg_ids(captured_msg_ids, 17997)
     end
 
     it "does not split a log and does not perform any request if it exceeds 1MB once compressed" do
@@ -417,11 +450,12 @@ describe LogStash::Outputs::NewRelic do
     end
 
     it "does a single request when the payload is below 1MB" do
-      stub_request(:any, base_uri).to_return(status: 200)
+      captured_msg_ids = []
+      stub_requests_and_capture_msg_ids(captured_msg_ids)
 
-      # This file contains a large amount of random log record messages that upon compressed ends up being about 0.88MB
+      # This file contains 5000 random log record messages that upon compressed ends up being about 0.74MB
       # Given that this is below the 1MB allowed by the Logs API, a single request will be made
-      file_path = 'spec/outputs/input_messages_resulting_in_880KB_compressed_payload.json'
+      file_path = 'spec/outputs/input_5000_messages_resulting_in_740KB_compressed_payload.json'
 
       logstash_events = []
       File.foreach(file_path) do |line|
@@ -430,8 +464,13 @@ describe LogStash::Outputs::NewRelic do
 
       @newrelic_output.multi_receive(logstash_events)
 
+      # Verify number of requests matches exactly 1. Note that .times() unexpectedly behaves as .at_least_times(), so we
+      # are forced to do this double verification to check the exact number of calls.
       wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(1)
       wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(1)
+
+      # Verify all expected msgIds were received
+      expect_msg_ids(captured_msg_ids, 5000)
     end
   end
 end
