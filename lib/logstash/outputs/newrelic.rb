@@ -39,7 +39,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     }
     @header = {
       'X-Event-Source' => 'logs',
-      'Content-Encoding' => 'gzip'
+      'Content-Encoding' => 'gzip',
+      'Content-Type' => 'application/json'
     }.merge(auth).freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
@@ -131,7 +132,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     begin
       http = Net::HTTP.new(@end_point.host, 443)
       request = Net::HTTP::Post.new(@end_point.request_uri)
-      request['Content-Type'] = 'application/json'
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
       if !@custom_ca_cert.nil?

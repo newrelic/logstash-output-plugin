@@ -28,6 +28,8 @@ services:
       - "./logstash.conf:/usr/share/logstash/pipeline/logstash.conf"
       - "./testdata/logstashtest.log:/usr/share/logstash/data/logstashtest.log"
       - "./mockserver-ca.pem:/certificates/mockserver-ca.pem"
+    # Logstash 5.X requires us explicitly passing the configuration file via the -f option, newer versions don't.
+    command: "bin/logstash -f /usr/share/logstash/pipeline/logstash.conf"
     environment:
       FILE_PATH: /usr/share/logstash/data/logstashtest.log
       LICENSE_KEY: some-license-key
