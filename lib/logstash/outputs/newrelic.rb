@@ -145,6 +145,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   def nr_send(payload)
     retries = 0
+    retry_duration = 1
+
     begin
       http = Net::HTTP.new(@end_point.host, 443)
       request = Net::HTTP::Post.new(@end_point.request_uri)
@@ -163,7 +165,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       @logger.error(e.message)
       if (should_retry(retries) && is_retryable_code(e))
         retries += 1
-        sleep(1)
+        sleep(retry_duration)
+        retry_duration *= 2
         retry
       end
     rescue => e
@@ -178,7 +181,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
           :error_class => e.class.name,
           :backtrace => e.backtrace
         )
-        sleep(1)
+        sleep(retry_duration)
+        retry_duration *= 2
         retry
       else
         @logger.error(
