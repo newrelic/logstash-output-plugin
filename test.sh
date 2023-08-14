@@ -2,8 +2,8 @@
 set -e
 # For Mac M1 laptops, you need to use a version that has an arm64-compatible version
 # See: https://www.docker.elastic.co/r/logstash/logstash
-# Latest valid versions for M1 of each major Logstash release: 7.11.0, 8.9.0
-LOGSTASH_VERSION=${1:-"7.11.0"}
+# Latest valid versions for M1 of each major Logstash release: 7.17.12, 8.9.0
+LOGSTASH_VERSION=${1:-"7.17.12"}
 export LOGSTASH_VERSION=$LOGSTASH_VERSION
 
 MOCKSERVER_PORT=443
@@ -31,7 +31,7 @@ function check_logs {
   if [[ "${LOGSTASH_VERSION}" =~ ^8 ]]; then
     verification_file=verification-logstash8.json
   else
-    verification_file=verification-logstash5_6_7.json
+    verification_file=verification-logstash6_7.json
   fi
 
   curl -X PUT -s --fail "http://localhost:${MOCKSERVER_PORT}/mockserver/verify" -d "@test/${verification_file}" >> /dev/null

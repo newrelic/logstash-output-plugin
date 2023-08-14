@@ -1,4 +1,4 @@
-ARG LOGSTASH_VERSION=7.11.0
+ARG LOGSTASH_VERSION=7.17.12
 FROM docker.elastic.co/logstash/logstash:$LOGSTASH_VERSION
 
 COPY ./logstash-output-newrelic-*.gem /logstash/install/logstash-output-newrelic.gem
