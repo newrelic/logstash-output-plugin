@@ -23,6 +23,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://log-api.newrelic.com/log/v1"
   config :max_retries, :validate => :number, :default => 3
+  # Only used for E2E testing
+  config :custom_ca_cert, :validate => :string, :required => false
 
   public
 
@@ -37,7 +39,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     }
     @header = {
       'X-Event-Source' => 'logs',
-      'Content-Encoding' => 'gzip'
+      'Content-Encoding' => 'gzip',
+      'Content-Type' => 'application/json'
     }.merge(auth).freeze
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphor = java.util.concurrent.Semaphore.new(@concurrent_requests)
@@ -131,6 +134,12 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       request = Net::HTTP::Post.new(@end_point.request_uri)
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      if !@custom_ca_cert.nil?
+        store = OpenSSL::X509::Store.new
+        ca_cert = OpenSSL::X509::Certificate.new(File.read(@custom_ca_cert))
+        store.add_cert(ca_cert)
+        http.cert_store = store
+      end
       @header.each { |k, v| request[k] = v }
       request.body = payload
       handle_response(http.request(request))

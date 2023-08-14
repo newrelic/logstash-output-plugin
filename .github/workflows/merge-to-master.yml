@@ -8,7 +8,7 @@ on:
 jobs:
   cd:
     name: Continuous Delivery pipeline
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
