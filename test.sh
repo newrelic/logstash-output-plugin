@@ -50,12 +50,12 @@ function run_test {
   docker-compose -f ./test/docker-compose.yml up -d
 
   # Waiting mockserver to be ready
-  max_retry=10
+  max_retry=20
   counter=0
   until check_mockserver
   do
-    echo "Waiting mockserver to be ready. Trying again in 2s. Try #$counter"
-    sleep 2
+    echo "Waiting mockserver to be ready. Trying again in 3s. Try #$counter"
+    sleep 3
     [[ $counter -eq $max_retry ]] && echo "Mockserver failed to start!" && exit 1
     counter=$((counter+1))
   done
@@ -72,12 +72,12 @@ function run_test {
   # small changes so fast, if we add more echoes it works as well.
   touch ./test/testdata/logstashtest.log
 
-  max_retry=10
+  max_retry=20
   counter=0
   until check_logs
   do
-    echo "Logs not found trying again in 2s. Try #$counter"
-    sleep 2
+    echo "Logs not found trying again in 3s. Try #$counter"
+    sleep 3
     [[ $counter -eq $max_retry ]] && echo "Logs do not reach the server!" && exit 1
     counter=$((counter+1))
   done
