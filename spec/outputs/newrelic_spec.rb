@@ -265,7 +265,7 @@ describe LogStash::Outputs::NewRelic do
     end
   end
 
-  context "error handling" do
+  context "error handling and retry logic" do
     it "continues through errors, future calls should still succeed" do
       stub_request(:any, base_uri)
         .to_raise(StandardError.new("from test"))
@@ -281,33 +281,41 @@ describe LogStash::Outputs::NewRelic do
         .to have_been_made
     end
 
-    it "retry when receive retryable http error code" do
-      stub_request(:any, base_uri)
-        .to_return(status: 500)
-        .to_return(status: 200)
+    [
+      { "returned_status_code" => 200, "expected_to_retry" => false },
+      { "returned_status_code" => 202, "expected_to_retry" => false },
+      { "returned_status_code" => 400, "expected_to_retry" => false },
+      { "returned_status_code" => 404, "expected_to_retry" => false },
+      { "returned_status_code" => 408, "expected_to_retry" => true },
+      { "returned_status_code" => 429, "expected_to_retry" => true },
+      { "returned_status_code" => 500, "expected_to_retry" => true },
+      { "returned_status_code" => 502, "expected_to_retry" => true },
+      { "returned_status_code" => 503, "expected_to_retry" => true },
+      { "returned_status_code" => 504, "expected_to_retry" => true },
+      { "returned_status_code" => 599, "expected_to_retry" => true }
+    ].each do |test_case|
+      returned_status_code = test_case["returned_status_code"]
+      expected_to_retry = test_case["expected_to_retry"]
 
-      event1 = LogStash::Event.new({ "message" => "Test message 1" })
-      @newrelic_output.multi_receive([event1])
+      it "should #{expected_to_retry ? "" : "not"} retry on status code #{returned_status_code}" do
+        stub_request(:any, base_uri)
+          .to_return(status: returned_status_code)
+          .to_return(status: 200)
 
-      wait_for(a_request(:post, base_uri)
-                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
-        .to have_been_made.times(2)
+        logstash_event = LogStash::Event.new({ "message" => "Test message" })
+        @newrelic_output.multi_receive([logstash_event])
+
+        expected_retries = expected_to_retry ? 2 : 1
+        wait_for(a_request(:post, base_uri)
+                   .with { |request| single_gzipped_message(request.body)['message'] == 'Test message' })
+          .to have_been_made.at_least_times(expected_retries)
+        wait_for(a_request(:post, base_uri)
+                   .with { |request| single_gzipped_message(request.body)['message'] == 'Test message' })
+          .to have_been_made.at_most_times(expected_retries)
+      end
     end
 
-    it "not retry when receive a non retryable http error code" do
-      stub_request(:any, base_uri)
-        .to_return(status: 401)
-
-      event1 = LogStash::Event.new({ "message" => "Test message 1" })
-      @newrelic_output.multi_receive([event1])
-      # Due the async behavior we need to wait to be sure that the method was not called more than 1 time
-      sleep(2)
-      wait_for(a_request(:post, base_uri)
-                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
-        .to have_been_made.times(1)
-    end
-
-    it "not retries when retry is disabled" do
+    it "does not retry when max_retries is set to 0" do
       @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(
         { "base_uri" => base_uri, "license_key" => api_key, "max_retries" => '0' }
       )
@@ -324,7 +332,7 @@ describe LogStash::Outputs::NewRelic do
         .to have_been_made.times(1)
     end
 
-    it "retry when receive a not expected exception" do
+    it "retries when receive a not expected exception" do
       stub_request(:any, base_uri)
         .to_raise(StandardError.new("from test"))
         .to_return(status: 200)

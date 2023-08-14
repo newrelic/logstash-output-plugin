@@ -13,7 +13,7 @@ require_relative './exception/error'
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   java_import java.util.concurrent.Executors;
 
-  NON_RETRYABLE_CODES = Set[401, 403]
+  RETRIABLE_CODES = Set[408, 429, 500, 502, 503, 504, 599]
 
   MAX_PAYLOAD_SIZE_BYTES = 1_000_000
 
@@ -145,6 +145,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   def nr_send(payload)
     retries = 0
+    retry_duration = 1
+
     begin
       http = Net::HTTP.new(@end_point.host, 443)
       request = Net::HTTP::Post.new(@end_point.request_uri)
@@ -163,7 +165,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       @logger.error(e.message)
       if (should_retry(retries) && is_retryable_code(e))
         retries += 1
-        sleep(1)
+        sleep(retry_duration)
+        retry_duration *= 2
         retry
       end
     rescue => e
@@ -178,7 +181,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
           :error_class => e.class.name,
           :backtrace => e.backtrace
         )
-        sleep(1)
+        sleep(retry_duration)
+        retry_duration *= 2
         retry
       else
         @logger.error(
@@ -197,6 +201,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   def is_retryable_code(response_error)
     error_code = response_error.response_code
-    !NON_RETRYABLE_CODES.include?(error_code)
+    RETRIABLE_CODES.include?(error_code)
   end
 end # class LogStash::Outputs::NewRelic
