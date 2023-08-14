@@ -28,7 +28,12 @@ clean_up () {
 trap clean_up EXIT
 
 function check_logs {
-  curl -X PUT -s --fail "http://localhost:${MOCKSERVER_PORT}/mockserver/verify" -d @test/verification.json >> /dev/null
+  if [[ "${LOGSTASH_VERSION}" =~ ^8 ]]; then
+    verification_file=@test/verification-logstash8.json
+  else
+    verification_file=@test/verification-logstash5_6_7.json
+  fi
+  curl -X PUT -s --fail "http://localhost:${MOCKSERVER_PORT}/mockserver/verify" -d "${verification_file}" >> /dev/null
   RESULT=$?
   return $RESULT
 }
