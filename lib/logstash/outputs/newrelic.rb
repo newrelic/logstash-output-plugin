@@ -176,6 +176,9 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       @header.each { |k, v| request[k] = v }
       request.body = payload
       handle_response(http.request(request))
+      if (retries > 0)
+        @logger.warn("Successfully sent logs at retry #{retries}")
+      end
     rescue Error::BadResponseCodeError => e
       @logger.error(e.message)
       if (should_retry(retries) && is_retryable_code(e))

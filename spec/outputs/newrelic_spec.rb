@@ -343,6 +343,28 @@ describe LogStash::Outputs::NewRelic do
                  .with { |request| single_gzipped_message(request.body)['message'] == 'Test message 1' })
         .to have_been_made.times(2)
     end
+
+    it "performs the configured amount of retries, no more, no less" do
+      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(
+        { "base_uri" => base_uri, "license_key" => api_key, "max_retries" => '3' }
+      )
+      @newrelic_output.register
+      stub_request(:any, base_uri)
+        .to_return(status: 500)
+        .to_return(status: 500)
+        .to_return(status: 500)
+        .to_return(status: 200)
+
+      event1 = LogStash::Event.new({ "message" => "Test message" })
+      @newrelic_output.multi_receive([event1])
+
+      wait_for(a_request(:post, base_uri)
+                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message' })
+        .to have_been_made.at_least_times(3)
+      wait_for(a_request(:post, base_uri)
+                 .with { |request| single_gzipped_message(request.body)['message'] == 'Test message' })
+        .to have_been_made.at_most_times(3)
+    end
   end
 
   context "JSON serialization" do
