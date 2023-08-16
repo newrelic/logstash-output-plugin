@@ -11,7 +11,6 @@ require_relative './config/bigdecimal_patch'
 require_relative './exception/error'
 
 class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
-  java_import java.util.concurrent.Executors;
 
   RETRIABLE_CODES = Set[408, 429, 500, 502, 503, 504, 599]
 
@@ -43,7 +42,14 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       'Content-Encoding' => 'gzip',
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
+
+    # We use a semaphore to ensure that at most there are @concurrent_requests inflight Logstash requests being processed
+    # by our plugin at the same time. Without this semaphore, given that @executor.submit() is an asynchronous method, it
+    # would cause that an unbounded amount of inflight requests may be processed by our plugin. Logstash then believes
+    # that our plugin has processed the request, and keeps reading more inflight requests in memory. This causes a memory
+    # leak and results in an OutOfMemoryError.
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
+    @semaphore = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
@@ -97,7 +103,19 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
     nr_logs = to_nr_logs(logstash_events)
 
-    package_and_send_recursively(nr_logs)
+    submit_logs_to_be_sent(nr_logs)
+  end
+
+  def submit_logs_to_be_sent(nr_logs)
+    @semaphore.acquire()
+    execute = @executor.java_method :submit, [java.lang.Runnable]
+    execute.call do
+      begin
+        package_and_send_recursively(nr_logs)
+      ensure
+        @semaphore.release()
+      end
+    end
   end
 
   def package_and_send_recursively(nr_logs)
@@ -113,27 +131,24 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       :logs => nr_logs
     }
 
-    execute = @executor.java_method :submit, [java.lang.Runnable]
-    execute.call do
-      compressed_payload = StringIO.new
-      gzip = Zlib::GzipWriter.new(compressed_payload)
-      gzip << [payload].to_json
-      gzip.close
+    compressed_payload = StringIO.new
+    gzip = Zlib::GzipWriter.new(compressed_payload)
+    gzip << [payload].to_json
+    gzip.close
 
-      compressed_size = compressed_payload.string.bytesize
-      log_record_count = nr_logs.length
+    compressed_size = compressed_payload.string.bytesize
+    log_record_count = nr_logs.length
 
-      if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
-        @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
-      elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
-        @logger.debug("Compressed payload size (#{compressed_size}) exceededs maximum packet size (1MB) and will be split in two.")
-        split_index = log_record_count / 2
-        package_and_send_recursively(nr_logs[0...split_index])
-        package_and_send_recursively(nr_logs[split_index..-1])
-      else
-        @logger.debug("Payload compressed size: #{compressed_size}")
-        nr_send(compressed_payload.string)
-      end
+    if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
+      @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
+    elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
+      @logger.debug("Compressed payload size (#{compressed_size}) exceededs maximum packet size (1MB) and will be split in two.")
+      split_index = log_record_count / 2
+      package_and_send_recursively(nr_logs[0...split_index])
+      package_and_send_recursively(nr_logs[split_index..-1])
+    else
+      @logger.debug("Payload compressed size: #{compressed_size}")
+      nr_send(compressed_payload.string)
     end
   end
 
