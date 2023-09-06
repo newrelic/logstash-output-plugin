@@ -163,10 +163,10 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     retry_duration = 1
 
     begin
-      http = Net::HTTP.new(@end_point.host, 443)
+      http = Net::HTTP.new(@end_point.host, @end_point.port || 443)
       request = Net::HTTP::Post.new(@end_point.request_uri)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      http.use_ssl = (@end_point.scheme == 'https')
+      http.verify_mode = @end_point.scheme == 'https' ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
       if !@custom_ca_cert.nil?
         store = OpenSSL::X509::Store.new
         ca_cert = OpenSSL::X509::Certificate.new(File.read(@custom_ca_cert))
