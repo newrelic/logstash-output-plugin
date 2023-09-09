@@ -17,6 +17,8 @@ we keep using jruby 9.2.13.0 in order to be backwards-compatible with older Logs
 
 # Developing
 
+## Using host machine environment
+
 * Ensure you have `logstash` installed locally (required for unit testing): `brew install logstash`
 * Ensure your `logstash` path matches the one in `Gemfile` 
 * Install dependencies: `jruby -S bundle install`
@@ -24,6 +26,24 @@ we keep using jruby 9.2.13.0 in order to be backwards-compatible with older Logs
 * Bump version: edit version file `version.rb`
 * Run tests: `jruby -S bundle exec rspec`
 * Build the gem: `jruby -S gem build logstash-output-newrelic.gemspec`
+
+## Using docker environment
+
+* First build the container and run it
+```bash
+docker build -t logstash:devel -f Dockerfile.devel .
+docker run -ti --rm -v $(pwd):/usr/share/logstash/logstash-output-plugin:z logstash:devel
+```
+
+* Now inside the container do
+```bash
+cd logstash-output-plugin
+/usr/share/logstash/vendor/bundle/jruby/*/gems/bundler-*/exe/bundle install    # Install dependencies
+/usr/share/logstash/vendor/bundle/jruby/*/gems/bundler-*/exe/bundle exec rspec # Run tests
+```
+
+You can now edit the files outside (in your machine) and execute the tests inside
+the container.
 
 # Testing it with a local Logstash install
 
