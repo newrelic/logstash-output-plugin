@@ -7,6 +7,7 @@ require "logstash/event"
 require "thread"
 require "webmock/rspec"
 require "zlib"
+require "rspec/wait"
 
 describe LogStash::Outputs::NewRelic do
   let (:base_uri) { "https://testing-example-collector.com" }
@@ -46,6 +47,50 @@ describe LogStash::Outputs::NewRelic do
                 "X-Event-Source" => "logs",
                 "Content-Encoding" => "gzip",
               })).to have_been_made
+    end
+  end
+
+  context "check https connection scheme" do
+    it "uses https by default" do
+      stub_request(:any, base_uri).to_return(status: 200)
+
+      event = LogStash::Event.new({:message => "Test message" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, base_uri)
+        .with(headers: {
+                "X-License-Key" => license_key,
+                "X-Event-Source" => "logs",
+                "Content-Encoding" => "gzip",
+              })).to have_been_made
+
+      # Check if the requests were made using HTTPS
+      expect(WebMock).to have_requested(:post, base_uri).with { |req| req.uri.scheme == 'https' }
+      expect(WebMock).to have_requested(:post, base_uri).with { |req| req.uri.port == 443 }
+    end
+  end
+
+  context "check http connection scheme" do
+    it "uses http when http config is set" do
+      stub_request(:any, "http://localhost:5000/").to_return(status: 200)
+      @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new({
+        "base_uri" => "http://localhost:5000/",
+        "license_key" => license_key
+      })
+      @newrelic_output.register
+      event = LogStash::Event.new({:message => "Test message" })
+      @newrelic_output.multi_receive([event])
+
+      wait_for(a_request(:post, "http://localhost:5000/")
+        .with(headers: {
+                "X-License-Key" => license_key,
+                "X-Event-Source" => "logs",
+                "Content-Encoding" => "gzip",
+              })).to have_been_made
+
+      # Check if the requests were made using HTTP to this endpoint
+      expect(WebMock).to have_requested(:post, "http://localhost:5000/").with { |req| req.uri.scheme == 'http' }
+      expect(WebMock).to have_requested(:post, "http://localhost:5000/").with { |req| req.uri.port == 5000 }
     end
   end
 end
