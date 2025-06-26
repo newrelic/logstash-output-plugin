@@ -14,14 +14,14 @@ clean_up () {
     if [[ $ARG -ne 0 ]]; then
       echo "Test failed, showing docker logs"
       echo "- Mockserver"
-      docker-compose -f ./test/docker-compose.yml logs mockserver
+      docker compose -f ./test/docker-compose.yml logs mockserver
       echo "- Logstash ${LOGSTASH_VERSION}"
-      docker-compose -f ./test/docker-compose.yml logs logstash
+      docker compose -f ./test/docker-compose.yml logs logstash
     fi
 
     echo "Cleaning up"
     rm -r ./test/testdata || true
-    docker-compose -f ./test/docker-compose.yml down
+    docker compose -f ./test/docker-compose.yml down
 
     exit $ARG
 }
@@ -53,7 +53,7 @@ function run_test {
   touch ./test/testdata/logstashtest.log
 
   echo "Starting docker compose"
-  docker-compose -f ./test/docker-compose.yml up -d
+  docker compose -f ./test/docker-compose.yml up -d
 
   # Waiting mockserver to be ready
   max_retry=20
