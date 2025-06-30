@@ -1,6 +1,7 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/outputs/newrelic_version/version"
+require 'resolv-replace'
 require 'net/http'
 require 'uri'
 require 'zlib'
