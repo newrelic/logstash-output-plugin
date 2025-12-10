@@ -1,7 +1,7 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/outputs/newrelic_version/version"
-require 'net/http'
+require 'manticore'
 require 'uri'
 require 'zlib'
 require 'json'
@@ -42,6 +42,18 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       'Content-Encoding' => 'gzip',
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
+
+    client_options = {
+      :pool_max => @concurrent_requests,
+      :pool_max_per_route => @concurrent_requests,
+      :ssl => {}
+    }
+
+    if !@custom_ca_cert.nil?
+      client_options[:ssl][:ca_file] = @custom_ca_cert
+    end
+
+    @client = Manticore::Client.new(client_options)
 
     # We use a semaphore to ensure that at most there are @concurrent_requests inflight Logstash requests being processed
     # by our plugin at the same time. Without this semaphore, given that @executor.submit() is an asynchronous method, it
@@ -153,8 +165,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   end
 
   def handle_response(response)
-    if !(200 <= response.code.to_i && response.code.to_i < 300)
-      raise Error::BadResponseCodeError.new(response.code.to_i, @base_uri)
+    if !(200 <= response.code && response.code < 300)
+      raise Error::BadResponseCodeError.new(response.code, @base_uri)
     end
   end
 
@@ -163,19 +175,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     retry_duration = 1
 
     begin
-      http = Net::HTTP.new(@end_point.host, @end_point.port || 443)
-      request = Net::HTTP::Post.new(@end_point.request_uri)
-      http.use_ssl = (@end_point.scheme == 'https')
-      http.verify_mode = @end_point.scheme == 'https' ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
-      if !@custom_ca_cert.nil?
-        store = OpenSSL::X509::Store.new
-        ca_cert = OpenSSL::X509::Certificate.new(File.read(@custom_ca_cert))
-        store.add_cert(ca_cert)
-        http.cert_store = store
-      end
-      @header.each { |k, v| request[k] = v }
-      request.body = payload
-      handle_response(http.request(request))
+      response = @client.post(@base_uri, :body => payload, :headers => @header)
+      handle_response(response)
       if (retries > 0)
         @logger.warn("Successfully sent logs at retry #{retries}")
       end
