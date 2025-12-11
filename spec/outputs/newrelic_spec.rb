@@ -36,9 +36,12 @@ if defined?(::Manticore)
     alias_method :original_post, :post
     
     def post(url, options = {})
-      # Capture the body before the request
+      # Capture the body before the request, preserving binary encoding
       if options[:body]
-        ManticoreRequestCapture.captured_bodies << options[:body].dup
+        body = options[:body].dup
+        # Force binary encoding to prevent corruption of gzipped data
+        body.force_encoding('BINARY') if body.respond_to?(:force_encoding)
+        ManticoreRequestCapture.captured_bodies << body
       end
       original_post(url, options)
     end
@@ -153,54 +156,38 @@ describe LogStash::Outputs::NewRelic do
   end
 
   def gunzip(bytes)
-    puts "DEBUG gunzip input: bytes class = #{bytes.class}"
     return bytes if bytes.nil? || bytes.empty?
     
     # For Manticore, the body might come as a Java byte array or InputStream
     # Convert to string if needed
     if bytes.respond_to?(:java_class)
-      puts "DEBUG: bytes has java_class"
       # Handle Java types (byte array, InputStream, etc)
       bytes = String.from_java_bytes(bytes) if bytes.respond_to?(:to_a)
     end
     
     bytes = bytes.to_s unless bytes.is_a?(String)
-    puts "DEBUG gunzip: after conversion, bytes class = #{bytes.class}, length = #{bytes.length}"
     
     # Ensure binary encoding
     bytes.force_encoding('BINARY')
     
     byte0 = bytes.getbyte(0)
     byte1 = bytes.getbyte(1)
-    puts "DEBUG gunzip: byte0 = 0x#{byte0.to_s(16)}, byte1 = 0x#{byte1.to_s(16)}"
     
     # Check for gzip magic bytes (0x1f 0x8b)
     if bytes.length >= 2 && byte0 == 0x1f && byte1 == 0x8b
-      puts "DEBUG gunzip: detected gzip magic bytes, decompressing..."
       sio = StringIO.new(bytes)
       gz = Zlib::GzipReader.new(sio)
       result = gz.read
       gz.close
-      puts "DEBUG gunzip: decompression successful, result length = #{result.length}"
       result
     else
-      puts "DEBUG gunzip: NOT gzipped (or magic bytes don't match), returning as-is"
       # Not gzipped, return as-is
       bytes
     end
   end
 
   def single_gzipped_message(body)
-    puts "DEBUG single_gzipped_message: body class = #{body.class}"
-    puts "DEBUG single_gzipped_message: body length = #{body.to_s.length}"
-    puts "DEBUG single_gzipped_message: first 10 bytes = #{body.to_s[0..9].bytes.map{|b| '%02X' % b}.join(' ')}"
-    
     decompressed = gunzip(body)
-    
-    puts "DEBUG after gunzip: decompressed class = #{decompressed.class}"
-    puts "DEBUG after gunzip: decompressed length = #{decompressed.length}"
-    puts "DEBUG after gunzip: first 50 chars = #{decompressed[0..49].inspect}"
-    
     message = JSON.parse(decompressed)[0]['logs']
     expect(message.length).to equal(1)
     message[0]
@@ -259,17 +246,13 @@ describe LogStash::Outputs::NewRelic do
   context "request body" do
 
     it "message contains plugin information" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ :message => "Test message" })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      data = multiple_gzipped_messages(captured_body)[0]
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      data = multiple_gzipped_messages(ManticoreRequestCapture.last_body)[0]
       expect(data['common']['attributes']['plugin']['type']).to eq('logstash')
       expect(data['common']['attributes']['plugin']['version']).to eq(LogStash::Outputs::NewRelicVersion::VERSION)
     end
@@ -293,85 +276,65 @@ describe LogStash::Outputs::NewRelic do
     end
 
     it "JSON object 'message' field is not parsed" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       message_json = '{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }'
       event = LogStash::Event.new({ :message => message_json, :other => "Other value" })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq(message_json)
       expect(message['attributes']['other']).to eq('Other value')
     end
 
     it "JSON array 'message' field is not parsed, left as is" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       message_json_array = '[{ "in-json-1": "1", "in-json-2": "2", "sub-object": {"in-json-3": "3"} }]'
       event = LogStash::Event.new({ :message => message_json_array, :other => "Other value" })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq(message_json_array)
       expect(message['attributes']['other']).to eq('Other value')
     end
 
     it "JSON string 'message' field is not parsed, left as is" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       message_json_string = '"I can be parsed as JSON"'
       event = LogStash::Event.new({ :message => message_json_string, :other => "Other value" })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq(message_json_string)
       expect(message['attributes']['other']).to eq('Other value')
     end
 
     it "other JSON fields are not parsed" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       other_json = '{ "key": "value" }'
       event = LogStash::Event.new({ :message => "Test message", :other => other_json })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq('Test message')
       expect(message['attributes']['other']).to eq(other_json)
     end
 
     it "handles messages without a 'message' field" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ :other => 'Other value' })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['attributes']['other']).to eq('Other value')
     end
 
@@ -389,18 +352,14 @@ describe LogStash::Outputs::NewRelic do
     end
 
     it "multiple events" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event1 = LogStash::Event.new({ "message" => "Test message 1" })
       event2 = LogStash::Event.new({ "message" => "Test message 2" })
       @newrelic_output.multi_receive([event1, event2])
 
-      wait_for { captured_body }.not_to be_nil
-      messages = multiple_gzipped_messages(captured_body)[0]['logs']
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      messages = multiple_gzipped_messages(ManticoreRequestCapture.last_body)[0]['logs']
       expect(messages.length).to eq(2)
       expect(messages[0]['message']).to eq('Test message 1')
       expect(messages[1]['message']).to eq('Test message 2')
@@ -409,21 +368,17 @@ describe LogStash::Outputs::NewRelic do
 
   context "error handling and retry logic" do
     it "continues through errors, future calls should still succeed" do
-      captured_body = nil
       stub_request(:any, base_uri)
         .to_raise(StandardError.new("from test"))
-        .to_return do |request|
-          captured_body = request.body
-          { status: 200 }
-        end
+        .to_return(status: 200)
 
       event1 = LogStash::Event.new({ "message" => "Test message 1" })
       event2 = LogStash::Event.new({ "message" => "Test message 2" })
       @newrelic_output.multi_receive([event1])
       @newrelic_output.multi_receive([event2])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.captured_bodies.length }.to be >= 2
+      message = single_gzipped_message(ManticoreRequestCapture.captured_bodies.last)
       expect(message['message']).to eq('Test message 2')
     end
 
@@ -445,10 +400,8 @@ describe LogStash::Outputs::NewRelic do
 
       it "should #{expected_to_retry ? "" : "not"} retry on status code #{returned_status_code}" do
         request_count = 0
-        captured_body = nil
         stub_request(:any, base_uri)
           .to_return do |request|
-            captured_body = request.body
             request_count += 1
             { status: request_count == 1 ? returned_status_code : 200 }
           end
@@ -458,7 +411,8 @@ describe LogStash::Outputs::NewRelic do
 
         expected_retries = expected_to_retry ? 2 : 1
         wait_for { request_count }.to eq(expected_retries)
-        message = single_gzipped_message(captured_body)
+        wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+        message = single_gzipped_message(ManticoreRequestCapture.last_body)
         expect(message['message']).to eq('Test message')
       end
     end
@@ -469,9 +423,7 @@ describe LogStash::Outputs::NewRelic do
       )
       @newrelic_output.register
       request_count = 0
-      captured_body = nil
       stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
         request_count += 1
         { status: 500 }
       end
@@ -481,15 +433,14 @@ describe LogStash::Outputs::NewRelic do
       # Due the async behavior we need to wait to be sure that the method was not called more than 1 time
       sleep(2)
       expect(request_count).to eq(1)
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq('Test message 1')
     end
 
     it "retries when receive a not expected exception" do
       request_count = 0
-      captured_body = nil
       stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
         request_count += 1
         raise StandardError.new("from test") if request_count == 1
         { status: 200 }
@@ -498,7 +449,8 @@ describe LogStash::Outputs::NewRelic do
       event1 = LogStash::Event.new({ "message" => "Test message 1" })
       @newrelic_output.multi_receive([event1])
       wait_for { request_count }.to eq(2)
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq('Test message 1')
     end
 
@@ -508,9 +460,7 @@ describe LogStash::Outputs::NewRelic do
       )
       @newrelic_output.register
       request_count = 0
-      captured_body = nil
       stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
         request_count += 1
         { status: request_count <= 3 ? 500 : 200 }
       end
@@ -519,67 +469,52 @@ describe LogStash::Outputs::NewRelic do
       @newrelic_output.multi_receive([event1])
 
       wait_for { request_count }.to eq(3)
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['message']).to eq('Test message')
     end
   end
 
   context "JSON serialization" do
     it "serializes floating point numbers as floating point numbers" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ "floatingpoint" => 0.12345 })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['attributes']['floatingpoint']).to eq(0.12345)
     end
 
     it "serializes BigDecimals as floating point numbers" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ "bigdecimal" => BigDecimal('0.12345') })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['attributes']['bigdecimal']).to eq(0.12345)
     end
 
     it "serializes NaN as null" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ "nan" => BigDecimal('NaN') })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
-      message = single_gzipped_message(captured_body)
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      message = single_gzipped_message(ManticoreRequestCapture.last_body)
       expect(message['attributes']['nan']).to be_nil
     end
   end
 
   context "payload splitting" do
 
-    def stub_requests_and_capture_msg_ids(captured_msg_ids_accumulator)
-      mutex = Mutex.new
-      stub_request(:any, base_uri).to_return do |request|
-        mutex.synchronize do
-          captured_msg_ids_accumulator.concat(extract_msg_ids(request.body))
-        end
-        { status: 200 }
+    def collect_msg_ids_from_captured_bodies
+      ManticoreRequestCapture.captured_bodies.flat_map do |body|
+        extract_msg_ids(body)
       end
     end
 
@@ -599,8 +534,7 @@ describe LogStash::Outputs::NewRelic do
     end
 
     it "splits logs into up to 1MB payloads" do
-      captured_msg_ids = []
-      stub_requests_and_capture_msg_ids(captured_msg_ids)
+      stub_request(:any, base_uri).to_return(status: 200)
 
       # This file contains 17997 random log record messages that upon compressed ends up being about 2.68MB
       # Each log record is pretty small (no single log exceeds 1MB alone), so, we expect it to perform 4 requests to the API
@@ -619,6 +553,7 @@ describe LogStash::Outputs::NewRelic do
       wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(4)
 
       # Verify all expected msgIds were received
+      captured_msg_ids = collect_msg_ids_from_captured_bodies
       expect_msg_ids(captured_msg_ids, 17997)
     end
 
@@ -640,8 +575,7 @@ describe LogStash::Outputs::NewRelic do
     end
 
     it "does a single request when the payload is below 1MB" do
-      captured_msg_ids = []
-      stub_requests_and_capture_msg_ids(captured_msg_ids)
+      stub_request(:any, base_uri).to_return(status: 200)
 
       # This file contains 5000 random log record messages that upon compressed ends up being about 0.74MB
       # Given that this is below the 1MB allowed by the Logs API, a single request will be made
@@ -660,6 +594,7 @@ describe LogStash::Outputs::NewRelic do
       wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(1)
 
       # Verify all expected msgIds were received
+      captured_msg_ids = collect_msg_ids_from_captured_bodies
       expect_msg_ids(captured_msg_ids, 5000)
     end
   end
