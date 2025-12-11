@@ -10,7 +10,11 @@ require "webmock/rspec"
 require "zlib"
 require "rspec/wait"
 
+# Configure WebMock to work with Manticore
 WebMock.disable_net_connect!(allow_localhost: true)
+
+# Ensure WebMock can intercept Manticore requests
+require 'webmock/http_lib_adapters/manticore_adapter' if defined?(::Manticore)
 
 describe LogStash::Outputs::NewRelic do
   let (:base_uri) { "https://testing-example-collector.com" }
@@ -122,10 +126,13 @@ describe LogStash::Outputs::NewRelic do
   def gunzip(bytes)
     return bytes if bytes.nil? || bytes.empty?
     
-    bytes = bytes.force_encoding('BINARY') if bytes.respond_to?(:force_encoding)
+    # Ensure we're working with binary encoding
+    bytes = bytes.dup if bytes.frozen?
+    bytes.force_encoding('BINARY') if bytes.respond_to?(:force_encoding)
     
     # Check if it's actually gzipped by looking for gzip magic number
-    if bytes.bytesize >= 2 && bytes.getbyte(0) == 0x1f && bytes.getbyte(1) == 0x8b
+    # Gzip files start with 0x1f 0x8b
+    if bytes.length >= 2 && bytes[0].ord == 0x1f && bytes[1].ord == 0x8b
       begin
         gz = Zlib::GzipReader.new(StringIO.new(bytes))
         result = gz.read
