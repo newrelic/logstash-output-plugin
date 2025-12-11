@@ -124,28 +124,54 @@ describe LogStash::Outputs::NewRelic do
   end
 
   def gunzip(bytes)
+    puts "DEBUG gunzip input: bytes class = #{bytes.class}"
     return bytes if bytes.nil? || bytes.empty?
     
     # For Manticore, the body might come as a Java byte array or InputStream
     # Convert to string if needed
-    bytes = bytes.to_s if bytes.respond_to?(:to_s)
+    if bytes.respond_to?(:java_class)
+      puts "DEBUG: bytes has java_class"
+      # Handle Java types (byte array, InputStream, etc)
+      bytes = String.from_java_bytes(bytes) if bytes.respond_to?(:to_a)
+    end
+    
+    bytes = bytes.to_s unless bytes.is_a?(String)
+    puts "DEBUG gunzip: after conversion, bytes class = #{bytes.class}, length = #{bytes.length}"
     
     # Ensure binary encoding
-    bytes.force_encoding('BINARY') if bytes.respond_to?(:force_encoding)
+    bytes.force_encoding('BINARY')
+    
+    byte0 = bytes.getbyte(0)
+    byte1 = bytes.getbyte(1)
+    puts "DEBUG gunzip: byte0 = 0x#{byte0.to_s(16)}, byte1 = 0x#{byte1.to_s(16)}"
     
     # Check for gzip magic bytes (0x1f 0x8b)
-    if bytes.length >= 2 && bytes.bytes[0] == 0x1f && bytes.bytes[1] == 0x8b
-      Zlib::GzipReader.new(StringIO.new(bytes)).read
+    if bytes.length >= 2 && byte0 == 0x1f && byte1 == 0x8b
+      puts "DEBUG gunzip: detected gzip magic bytes, decompressing..."
+      sio = StringIO.new(bytes)
+      gz = Zlib::GzipReader.new(sio)
+      result = gz.read
+      gz.close
+      puts "DEBUG gunzip: decompression successful, result length = #{result.length}"
+      result
     else
+      puts "DEBUG gunzip: NOT gzipped (or magic bytes don't match), returning as-is"
+      # Not gzipped, return as-is
       bytes
     end
-  rescue => e
-    # If decompression fails, return original bytes
-    bytes
   end
 
   def single_gzipped_message(body)
+    puts "DEBUG single_gzipped_message: body class = #{body.class}"
+    puts "DEBUG single_gzipped_message: body length = #{body.to_s.length}"
+    puts "DEBUG single_gzipped_message: first 10 bytes = #{body.to_s[0..9].bytes.map{|b| '%02X' % b}.join(' ')}"
+    
     decompressed = gunzip(body)
+    
+    puts "DEBUG after gunzip: decompressed class = #{decompressed.class}"
+    puts "DEBUG after gunzip: decompressed length = #{decompressed.length}"
+    puts "DEBUG after gunzip: first 50 chars = #{decompressed[0..49].inspect}"
+    
     message = JSON.parse(decompressed)[0]['logs']
     expect(message.length).to equal(1)
     message[0]
@@ -223,6 +249,9 @@ describe LogStash::Outputs::NewRelic do
       captured_body = nil
       stub_request(:any, base_uri).to_return do |request|
         captured_body = request.body
+        puts "DEBUG: Captured body class: #{captured_body.class}"
+        puts "DEBUG: Captured body length: #{captured_body.length rescue 'N/A'}"
+        puts "DEBUG: First 20 bytes: #{captured_body.to_s[0..19].bytes.map{|b| "\\x%02X" % b}.join rescue 'N/A'}"
         { status: 200 }
       end
 
