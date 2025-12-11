@@ -144,7 +144,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     }
 
     compressed_payload = StringIO.new
-    compressed_payload.set_encoding("BINARY")
+    #compressed_payload.set_encoding()
     gzip = Zlib::GzipWriter.new(compressed_payload)
     gzip << [payload].to_json
     gzip.close
@@ -155,7 +155,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
       @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
     elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
-      @logger.debug("Compressed payload size (#{compressed_size}) exceededs maximum packet size (1MB) and will be split in two.")
+      @logger.debug("Compressed payload size (#{compressed_size}) exceeds maximum packet size (1MB) and will be split in two.")
       split_index = log_record_count / 2
       package_and_send_recursively(nr_logs[0...split_index])
       package_and_send_recursively(nr_logs[split_index..-1])
