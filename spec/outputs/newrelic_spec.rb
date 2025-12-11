@@ -117,6 +117,7 @@ describe LogStash::Outputs::NewRelic do
   end
 
   def gunzip(bytes)
+    bytes = bytes.force_encoding('BINARY') if bytes.respond_to?(:force_encoding)
     gz = Zlib::GzipReader.new(StringIO.new(bytes))
     gz.read
   end
