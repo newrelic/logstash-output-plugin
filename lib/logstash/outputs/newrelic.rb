@@ -144,6 +144,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     }
 
     compressed_payload = StringIO.new
+    compressed_payload.set_encoding("BINARY")
     gzip = Zlib::GzipWriter.new(compressed_payload)
     gzip << [payload].to_json
     gzip.close
