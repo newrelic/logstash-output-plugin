@@ -13,8 +13,37 @@ require "rspec/wait"
 # Configure WebMock to work with Manticore
 WebMock.disable_net_connect!(allow_localhost: true)
 
-# Ensure WebMock can intercept Manticore requests
-require 'webmock/http_lib_adapters/manticore_adapter' if defined?(::Manticore)
+# Monkey-patch Manticore to capture request bodies for testing
+module ManticoreRequestCapture
+  @@captured_bodies = []
+  
+  def self.captured_bodies
+    @@captured_bodies
+  end
+  
+  def self.clear
+    @@captured_bodies.clear
+  end
+  
+  def self.last_body
+    @@captured_bodies.last
+  end
+end
+
+# Patch Manticore::Client to capture bodies before WebMock intercepts
+if defined?(::Manticore)
+  Manticore::Client.class_eval do
+    alias_method :original_post, :post
+    
+    def post(url, options = {})
+      # Capture the body before the request
+      if options[:body]
+        ManticoreRequestCapture.captured_bodies << options[:body].dup
+      end
+      original_post(url, options)
+    end
+  end
+end
 
 describe LogStash::Outputs::NewRelic do
   let (:base_uri) { "https://testing-example-collector.com" }
@@ -246,19 +275,18 @@ describe LogStash::Outputs::NewRelic do
     end
 
     it "all other fields passed through as is" do
-      captured_body = nil
-      stub_request(:any, base_uri).to_return do |request|
-        captured_body = request.body
-        puts "DEBUG: Captured body class: #{captured_body.class}"
-        puts "DEBUG: Captured body length: #{captured_body.length rescue 'N/A'}"
-        puts "DEBUG: First 20 bytes: #{captured_body.to_s[0..19].bytes.map{|b| "\\x%02X" % b}.join rescue 'N/A'}"
-        { status: 200 }
-      end
+      stub_request(:any, base_uri).to_return(status: 200)
 
       event = LogStash::Event.new({ :message => "Test message", :other => "Other value" })
       @newrelic_output.multi_receive([event])
 
-      wait_for { captured_body }.not_to be_nil
+      wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
+      captured_body = ManticoreRequestCapture.last_body
+      
+      puts "DEBUG: Captured body class: #{captured_body.class}"
+      puts "DEBUG: Captured body length: #{captured_body.length rescue 'N/A'}"
+      puts "DEBUG: First 20 bytes: #{captured_body.to_s[0..19].bytes.map{|b| "\\x%02X" % b}.join rescue 'N/A'}"
+      
       message = single_gzipped_message(captured_body)
       expect(message['message']).to eq('Test message')
       expect(message['attributes']['other']).to eq('Other value')
