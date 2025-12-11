@@ -118,13 +118,10 @@ describe LogStash::Outputs::NewRelic do
 
   def gunzip(bytes)
     bytes = bytes.force_encoding('BINARY') if bytes.respond_to?(:force_encoding)
-    # WebMock may return the body as a string that is not actually gzipped if the stubbing is not perfect
-    # or if Manticore handles the body differently.
-    # Let's try to detect if it is gzipped by checking the magic bytes.
-    if bytes.start_with?("\x1F\x8B".force_encoding('BINARY'))
+    begin
       gz = Zlib::GzipReader.new(StringIO.new(bytes))
       gz.read
-    else
+    rescue Zlib::GzipFile::Error, Zlib::Error
       # If it's not gzipped, return it as is (assuming it's already decompressed or raw JSON)
       bytes
     end
