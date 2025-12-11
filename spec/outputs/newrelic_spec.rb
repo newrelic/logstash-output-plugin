@@ -5,9 +5,12 @@ require "logstash/outputs/newrelic_version/version"
 require "logstash/codecs/plain"
 require "logstash/event"
 require "thread"
+require "manticore"
 require "webmock/rspec"
 require "zlib"
 require "rspec/wait"
+
+WebMock.disable_net_connect!(allow_localhost: true)
 
 describe LogStash::Outputs::NewRelic do
   let (:base_uri) { "https://testing-example-collector.com" }
@@ -117,13 +120,23 @@ describe LogStash::Outputs::NewRelic do
   end
 
   def gunzip(bytes)
+    return bytes if bytes.nil? || bytes.empty?
+    
     bytes = bytes.force_encoding('BINARY') if bytes.respond_to?(:force_encoding)
-    begin
-      gz = Zlib::GzipReader.new(StringIO.new(bytes))
-      gz.read
-    rescue Zlib::GzipFile::Error, Zlib::Error
-      # If it's not gzipped, return it as is (assuming it's already decompressed or raw JSON)
-      bytes
+    
+    # Check if it's actually gzipped by looking for gzip magic number
+    if bytes.bytesize >= 2 && bytes.getbyte(0) == 0x1f && bytes.getbyte(1) == 0x8b
+      begin
+        gz = Zlib::GzipReader.new(StringIO.new(bytes))
+        result = gz.read
+        gz.close
+        return result
+      rescue Zlib::Error => e
+        raise "Failed to decompress gzip data: #{e.message}"
+      end
+    else
+      # If it doesn't have gzip magic bytes, assume it's already decompressed
+      return bytes
     end
   end
 
