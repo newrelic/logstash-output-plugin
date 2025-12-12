@@ -78,6 +78,18 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     @semaphore = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
+  def stop
+    shutdown
+  end
+
+  def close
+    shutdown
+  end
+
+  def teardown
+    shutdown
+  end
+
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
   def shutdown
     if @executor
@@ -88,6 +100,10 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       if !terminatedInTime
         raise "Did not shut down within #{terminationWaitInSeconds} seconds"
       end
+    end
+
+    if defined?(@client) && @client
+      @client.close
     end
   end
 
