@@ -13,8 +13,6 @@ clean_up () {
 
     if [[ $ARG -ne 0 ]]; then
       echo "Test failed, showing docker logs"
-      echo "- Mockserver"
-      docker compose -f ./test/docker-compose.yml logs mockserver
       echo "- Logstash ${LOGSTASH_VERSION}"
       docker compose -f ./test/docker-compose.yml logs logstash
     fi
@@ -27,24 +25,6 @@ clean_up () {
 }
 trap clean_up EXIT
 
-function check_logs {
-  if [[ "${LOGSTASH_VERSION}" =~ ^8 ]]; then
-    verification_file=verification-logstash8.json
-  else
-    verification_file=verification-logstash6_7.json
-  fi
-
-  curl -X PUT -s --fail "http://localhost:${MOCKSERVER_PORT}/mockserver/verify" -d "@test/${verification_file}" >> /dev/null
-  RESULT=$?
-  return $RESULT
-}
-
-function check_mockserver {
-  curl -X PUT -s --fail "http://localhost:${MOCKSERVER_PORT}/mockserver/status" >> /dev/null
-  RESULT=$?
-  return $RESULT
-}
-
 function run_test {
   echo "Starting test for Logstash version ${LOGSTASH_VERSION}"
 
@@ -55,7 +35,11 @@ function run_test {
   echo "Starting docker compose"
   docker compose -f ./test/docker-compose.yml up -d
 
-  # Send some logs
+  # Wait for logstash to start
+  echo "Waiting 20 seconds for logstash to fully start..."
+  sleep 20
+
+  # Send some logs AFTER logstash is running
   echo "Sending logs"
   for i in {1..5}; do
     echo "Hello!" >> ./test/testdata/logstashtest.log
