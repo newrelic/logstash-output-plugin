@@ -46,11 +46,20 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     client_options = {
       :pool_max => @concurrent_requests,
       :pool_max_per_route => @concurrent_requests,
-      :ssl => {}
+      :ssl => {
+        :verify => (@end_point.scheme == 'https') ? :strict : :none
+      }
     }
 
     if !@custom_ca_cert.nil?
-      client_options[:ssl][:ca_file] = @custom_ca_cert
+      # Load the custom CA certificate into a truststore
+      # This matches the old Net::HTTP behavior:
+      # store = OpenSSL::X509::Store.new
+      # ca_cert = OpenSSL::X509::Certificate.new(File.read(@custom_ca_cert))
+      # store.add_cert(ca_cert)
+      # http.cert_store = store
+      client_options[:ssl][:truststore] = @custom_ca_cert
+      client_options[:ssl][:truststore_type] = "PEM"
     end
 
     @client = Manticore::Client.new(client_options)
