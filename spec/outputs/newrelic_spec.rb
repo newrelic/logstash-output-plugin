@@ -63,6 +63,7 @@ describe LogStash::Outputs::NewRelic do
   }
 
   before(:each) do
+    ManticoreRequestCapture.clear
     @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
     @newrelic_output.register
   end
@@ -208,6 +209,7 @@ describe LogStash::Outputs::NewRelic do
 
 
   before(:each) do
+    ManticoreRequestCapture.clear
     @newrelic_output = LogStash::Plugin.lookup("output", "newrelic").new(simple_config)
     @newrelic_output.register
   end
