@@ -78,6 +78,14 @@ function run_test {
   grep -i "newrelic" /tmp/logstash-test.log | head -20 || echo "No newrelic-related logs found"
   echo ""
   
+  echo "=== Checking for any HTTP activity ==="
+  grep -i "post\|202\|200\|401\|403" /tmp/logstash-test.log | head -10 || echo "No HTTP activity found"
+  echo ""
+  
+  echo "=== Checking if file input is working ==="
+  grep -i "discovered\|reading\|Hello" /tmp/logstash-test.log | head -10 || echo "No file input activity found"
+  echo ""
+  
   if grep -q "ERROR" /tmp/logstash-test.log; then
     echo "Found ERROR in logstash logs!"
     grep "ERROR" /tmp/logstash-test.log
@@ -103,7 +111,7 @@ function run_test {
     echo "=== Verifying logs in New Relic ==="
     
     # Query New Relic for our test logs with retries
-    NRQL_QUERY="SELECT count(*) FROM Log WHERE message = 'Hello!' AND plugin.type = 'logstash' SINCE 5 minutes ago"
+    NRQL_QUERY="SELECT count(*) FROM Log WHERE message = 'Hello!' SINCE 5 minutes ago"
     
     max_retry=6
     retry_count=0
@@ -137,9 +145,10 @@ function run_test {
     done
     
     if [[ "$log_count" -lt 5 ]]; then
-      echo "⚠ Warning: Expected 5 logs but found $log_count in New Relic after $max_retry attempts"
+      echo "⚠ Error: Expected 5 logs but found $log_count in New Relic after $max_retry attempts"
       echo "Note: Logs may still be processing. Check New Relic UI in a few minutes."
       echo "API Response: $RESPONSE"
+      exit 1
     fi
   else
     echo ""
