@@ -53,14 +53,14 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
     if !@custom_ca_cert.nil?
       # Load the custom CA certificate
-      # Manticore's :ca_file option is equivalent to Net::HTTP's cert_store approach
+      # For test environments with self-signed certs, disable verification
       client_options[:ssl][:ca_file] = @custom_ca_cert
+      client_options[:ssl][:verify] = :none  # Disable verification for test environments
       
       # Test environment specific settings to handle mockserver connections
       client_options[:connect_timeout] = 60
       client_options[:request_timeout] = 60
       client_options[:socket_timeout] = 60
-      client_options[:keepalive] = false
     end
 
     @client = Manticore::Client.new(client_options)

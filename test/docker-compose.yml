@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   mockserver:
     image: mockserver/mockserver:5.15.0
@@ -8,7 +6,6 @@ services:
       - "./mockserver-ca.pem:/certificates/mockserver-ca.pem"
       - "./mockserver-ca-private-key.pem:/certificates/mockserver-ca-private-key.pem"
     ports:
-      # Need to use 443 because our plugin always connects to this port, no matter what
       - 443:443
     environment:
       MOCKSERVER_SERVER_PORT: 443
