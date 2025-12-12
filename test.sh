@@ -28,31 +28,11 @@ trap clean_up EXIT
 function run_test {
   echo "Starting test for Logstash version ${LOGSTASH_VERSION}"
 
-  echo "Creating testdata folder and log file"
-  mkdir ./test/testdata || true
-  touch ./test/testdata/logstashtest.log
-  
-  # Add initial content to ensure file has data when logstash starts watching
-  echo "Initial log" > ./test/testdata/logstashtest.log
-
   echo "Starting docker compose"
   docker compose -f ./test/docker-compose.yml up -d
 
-  # Wait for logstash to start and begin watching the file
-  echo "Waiting 20 seconds for logstash to fully start..."
-  sleep 20
-
-  # Append test logs AFTER logstash is watching
-  echo "Sending logs"
-  for i in {1..5}; do
-    echo "Hello!" >> ./test/testdata/logstashtest.log
-  done
-
-  # This updates the modified date of the log file
-  touch ./test/testdata/logstashtest.log
-
-  # Wait for logstash to process and send logs
-  echo "Waiting 30 seconds for logstash to process and send logs..."
+  # Wait for logstash to start and generate/send logs
+  echo "Waiting 30 seconds for logstash to start, generate logs, and send to New Relic..."
   sleep 30
 
   # Check if there were any errors in logstash logs
