@@ -47,7 +47,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       :pool_max => @concurrent_requests,
       :pool_max_per_route => @concurrent_requests,
       :ssl => {
-        :verify => (@end_point.scheme == 'https') ? :default : :none
+        :verify => :default
       }
     }
 
@@ -55,8 +55,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       # Load the custom CA certificate
       # Manticore's :ca_file option is equivalent to Net::HTTP's cert_store approach
       client_options[:ssl][:ca_file] = @custom_ca_cert
-      # When using a custom CA, we need to verify against it, not the system store
-      client_options[:ssl][:verify] = :peer
     end
 
     @client = Manticore::Client.new(client_options)
