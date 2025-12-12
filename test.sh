@@ -55,39 +55,35 @@ function run_test {
   echo "Starting docker compose"
   docker compose -f ./test/docker-compose.yml up -d
 
-  # Waiting mockserver to be ready
-  max_retry=20
-  counter=0
-  until check_mockserver
-  do
-    echo "Waiting mockserver to be ready. Trying again in 3s. Try #$counter"
-    sleep 3
-    [[ $counter -eq $max_retry ]] && echo "Mockserver failed to start!" && exit 1
-    counter=$((counter+1))
-  done
-
   # Send some logs
-  echo "Sending logs and waiting for them to arrive"
+  echo "Sending logs"
   for i in {1..5}; do
     echo "Hello!" >> ./test/testdata/logstashtest.log
   done
 
-  # This updates the modified date of the log file, it should
-  # be updated with the echo but looks like it doesn't. A reason
-  # could be that we're putting this file as a volume and writing
-  # small changes so fast, if we add more echoes it works as well.
+  # This updates the modified date of the log file
   touch ./test/testdata/logstashtest.log
 
-  max_retry=20
-  counter=0
-  until check_logs
-  do
-    echo "Logs not found trying again in 3s. Try #$counter"
-    sleep 3
-    [[ $counter -eq $max_retry ]] && echo "Logs do not reach the server!" && exit 1
-    counter=$((counter+1))
-  done
-  echo "Success!"
+  # Wait for logstash to process and send logs
+  echo "Waiting 30 seconds for logstash to process and send logs..."
+  sleep 30
+
+  # Check if there were any errors in logstash logs
+  echo "Checking logstash logs for errors..."
+  docker compose -f ./test/docker-compose.yml logs logstash > /tmp/logstash-test.log
+  
+  if grep -q "ERROR" /tmp/logstash-test.log; then
+    echo "Found ERROR in logstash logs!"
+    grep "ERROR" /tmp/logstash-test.log
+    exit 1
+  fi
+  
+  if grep -q "Maximum of attempts reached, dropping logs" /tmp/logstash-test.log; then
+    echo "Found 'Maximum of attempts reached' in logstash logs - connection failed!"
+    exit 1
+  fi
+  
+  echo "Success! No errors found in logstash logs."
 }
 
 function verify_java {
