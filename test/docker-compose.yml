@@ -10,7 +10,7 @@ services:
       MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
       MOCKSERVER_INITIALIZATION_JSON_PATH: /tmp/expectations.json
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:1080/mockserver/status"]
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:1080/mockserver/status || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
