@@ -9,11 +9,17 @@ services:
       MOCKSERVER_SERVER_PORT: 1080
       MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
       MOCKSERVER_INITIALIZATION_JSON_PATH: /tmp/expectations.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1080/mockserver/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   logstash:
     image: "logstash-${LOGSTASH_VERSION}-with-nr"
     depends_on:
-      - mockserver
+      mockserver:
+        condition: service_healthy
     volumes:
       - "./logstash.yml:/usr/share/logstash/config/logstash.yml"
       - "./logstash.conf:/usr/share/logstash/pipeline/logstash.conf"
