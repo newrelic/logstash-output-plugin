@@ -4,9 +4,9 @@ services:
     volumes:
       - "./logstash.yml:/usr/share/logstash/config/logstash.yml"
       - "./logstash.conf:/usr/share/logstash/pipeline/logstash.conf"
-      - "./testdata/logstashtest.log:/usr/share/logstash/data/logstashtest.log"
+      - "./testdata:/usr/share/logstash/data/testdata"
     # Logstash 5.X requires us explicitly passing the configuration file via the -f option, newer versions don't.
     command: "bin/logstash -f /usr/share/logstash/pipeline/logstash.conf"
     environment:
-      FILE_PATH: /usr/share/logstash/data/logstashtest.log
+      FILE_PATH: /usr/share/logstash/data/testdata/logstashtest.log
       LICENSE_KEY: ${LICENSE_KEY}
