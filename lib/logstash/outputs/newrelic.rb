@@ -45,22 +45,26 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
     client_options = {
       :pool_max => @concurrent_requests,
-      :pool_max_per_route => @concurrent_requests,
-      :ssl => {
-        :verify => :default
-      }
+      :pool_max_per_route => @concurrent_requests
     }
 
-    if !@custom_ca_cert.nil?
-      # Load the custom CA certificate
-      # For test environments with self-signed certs, disable verification
-      client_options[:ssl][:ca_file] = @custom_ca_cert
-      client_options[:ssl][:verify] = :none  # Disable verification for test environments
+    # Only configure SSL if using HTTPS
+    if @end_point.scheme == 'https'
+      client_options[:ssl] = {
+        :verify => :default
+      }
       
-      # Test environment specific settings to handle mockserver connections
-      client_options[:connect_timeout] = 60
-      client_options[:request_timeout] = 60
-      client_options[:socket_timeout] = 60
+      if !@custom_ca_cert.nil?
+        # Load the custom CA certificate
+        # For test environments with self-signed certs, disable verification
+        client_options[:ssl][:ca_file] = @custom_ca_cert
+        client_options[:ssl][:verify] = :none  # Disable verification for test environments
+        
+        # Test environment specific settings to handle mockserver connections
+        client_options[:connect_timeout] = 60
+        client_options[:request_timeout] = 60
+        client_options[:socket_timeout] = 60
+      end
     end
 
     @client = Manticore::Client.new(client_options)
