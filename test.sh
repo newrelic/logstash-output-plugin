@@ -31,15 +31,18 @@ function run_test {
   echo "Creating testdata folder and log file"
   mkdir ./test/testdata || true
   touch ./test/testdata/logstashtest.log
+  
+  # Add initial content to ensure file has data when logstash starts watching
+  echo "Initial log" > ./test/testdata/logstashtest.log
 
   echo "Starting docker compose"
   docker compose -f ./test/docker-compose.yml up -d
 
-  # Wait for logstash to start
+  # Wait for logstash to start and begin watching the file
   echo "Waiting 20 seconds for logstash to fully start..."
   sleep 20
 
-  # Send some logs AFTER logstash is running
+  # Append test logs AFTER logstash is watching
   echo "Sending logs"
   for i in {1..5}; do
     echo "Hello!" >> ./test/testdata/logstashtest.log
@@ -56,8 +59,13 @@ function run_test {
   echo "Checking logstash logs for errors..."
   docker compose -f ./test/docker-compose.yml logs logstash > /tmp/logstash-test.log
   
-  # Show relevant log lines for debugging
+  # Show pipeline startup
   echo ""
+  echo "=== Logstash pipeline status ==="
+  grep -i "pipeline.*start\|pipeline.*running\|pipeline.*stopped" /tmp/logstash-test.log || echo "No pipeline status found"
+  echo ""
+  
+  # Show relevant log lines for debugging
   echo "=== Logstash output plugin activity ==="
   grep -i "newrelic" /tmp/logstash-test.log | head -20 || echo "No newrelic-related logs found"
   echo ""
