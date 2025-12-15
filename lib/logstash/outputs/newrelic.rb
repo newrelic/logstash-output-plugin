@@ -257,12 +257,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
           @logger.warn("Unable to parse response body as JSON", :error_message => parse_error.message)
         end
       end
-      content_encoding = response.headers && response.headers['content-encoding']
-      if content_encoding
-        @logger.info("Response content encoding", :content_encoding => content_encoding)
-      else
-        @logger.info("Response did not include content-encoding header")
-      end
       handle_response(response)
       if (retries > 0)
         @logger.warn("Successfully sent logs at retry #{retries}")
