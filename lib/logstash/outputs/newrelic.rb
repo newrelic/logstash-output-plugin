@@ -246,6 +246,20 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
         preview = response_body.byteslice(0, 512)
         preview += "...[truncated]" if response_body.bytesize > 512
         @logger.info("Response body preview", :body_preview => preview)
+        begin
+          parsed_body = JSON.parse(response_body)
+          if parsed_body.is_a?(Hash) && parsed_body['requestId']
+            @logger.info("New Relic acknowledged request", :request_id => parsed_body['requestId'])
+          end
+        rescue JSON::ParserError => parse_error
+          @logger.warn("Unable to parse response body as JSON", :error_message => parse_error.message)
+        end
+      end
+      content_encoding = response.headers && response.headers['content-encoding']
+      if content_encoding
+        @logger.info("Response content encoding", :content_encoding => content_encoding)
+      else
+        @logger.info("Response did not include content-encoding header")
       end
       handle_response(response)
       if (retries > 0)
