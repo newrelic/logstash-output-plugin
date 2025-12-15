@@ -192,17 +192,28 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
       @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
     elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
-      @logger.debug("Compressed payload size (#{compressed_size}) exceeds maximum packet size (1MB) and will be split in two.")
+      @logger.info("Compressed payload size exceeds maximum packet size, splitting payload", :compressed_size => compressed_size)
       split_index = log_record_count / 2
-      @logger.debug("Splitting payload", :split_index => split_index, :first_half => split_index, :second_half => log_record_count - split_index)
+      @logger.info("Splitting payload", :split_index => split_index, :first_half => split_index, :second_half => log_record_count - split_index)
       package_and_send_recursively(nr_logs[0...split_index])
       package_and_send_recursively(nr_logs[split_index..-1])
     else
-      @logger.debug("Payload compressed size: #{compressed_size}", :payload_preview => nr_logs.first)
+      @logger.info("Payload ready for send", :compressed_size => compressed_size, :payload_preview => nr_logs.first)
       begin
-        @logger.debug("Sample event JSON", :event_json => nr_logs.first.to_json)
+        @logger.info("Sample event JSON", :event_json => nr_logs.first.to_json)
       rescue => e
         @logger.warn("Failed to serialize sample event for logging", :error_message => e.message)
+      end
+      begin
+        uncompressed_preview = ""
+        Zlib::GzipReader.wrap(StringIO.new(compressed_payload.string)) do |reader|
+          uncompressed_preview = reader.read
+        end
+        preview = uncompressed_preview.byteslice(0, 512)
+        preview += "...[truncated]" if uncompressed_preview && uncompressed_preview.bytesize > 512
+        @logger.info("Uncompressed payload preview", :json_preview => preview)
+      rescue => e
+        @logger.warn("Unable to preview uncompressed payload", :error_message => e.message)
       end
       nr_send(compressed_payload.string)
     end
@@ -219,7 +230,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     retry_duration = 1
 
     begin
-      @logger.debug("Sending payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
+      @logger.info("Dispatching payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
       response = @client.post(@base_uri, :body => payload, :headers => @header)
       response_body = nil
       if response.respond_to?(:body)
@@ -230,11 +241,11 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
         end
       end
 
-      @logger.debug("Received response from New Relic", :code => response.code, :message => response.message)
+      @logger.info("Received response from New Relic", :code => response.code, :message => response.message)
       if response_body && !response_body.empty?
         preview = response_body.byteslice(0, 512)
         preview += "...[truncated]" if response_body.bytesize > 512
-        @logger.debug("Response body preview", :body_preview => preview)
+        @logger.info("Response body preview", :body_preview => preview)
       end
       handle_response(response)
       if (retries > 0)
