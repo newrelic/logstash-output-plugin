@@ -33,6 +33,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if @api_key.nil? && @license_key.nil?
       raise LogStash::ConfigurationError, "Must provide a license key or api key", caller
     end
+    @logger.info("Registering logstash-output-newrelic", :version => LogStash::Outputs::NewRelicVersion::VERSION, :target => @base_uri)
     auth = {
       @api_key.nil? ? 'X-License-Key' : 'X-Insert-Key' =>
         @api_key.nil? ? @license_key.value : @api_key.value
@@ -93,6 +94,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
   def shutdown
     if @executor
+      @logger.info("Draining outstanding New Relic requests")
       @executor.shutdown
       # We want this long enough to not have threading issues
       terminationWaitInSeconds = 10
@@ -103,6 +105,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
 
     if defined?(@client) && @client
+      @logger.info("Closing New Relic HTTP client")
       @client.close
     end
   end
@@ -144,6 +147,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
 
     nr_logs = to_nr_logs(logstash_events)
+
+    @logger.info("Submitting logs to New Relic", :event_count => nr_logs.length)
 
     submit_logs_to_be_sent(nr_logs)
   end
