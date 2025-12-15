@@ -7,6 +7,7 @@ require 'zlib'
 require 'json'
 require 'java'
 require 'set'
+require 'stringio'
 require_relative './config/bigdecimal_patch'
 require_relative './exception/error'
 
@@ -180,13 +181,9 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       :logs => nr_logs
     }
 
-    compressed_payload = StringIO.new
-    #compressed_payload.set_encoding()
-    gzip = Zlib::GzipWriter.new(compressed_payload)
-    gzip << [payload].to_json
-    gzip.close
-
-    compressed_size = compressed_payload.string.bytesize
+    payload_json = [payload].to_json
+    compressed_payload = gzip_compress(payload_json, Zlib::DEFAULT_COMPRESSION)
+    compressed_size = compressed_payload.bytesize
     log_record_count = nr_logs.length
 
     if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
@@ -204,18 +201,10 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       rescue => e
         @logger.warn("Failed to serialize sample event for logging", :error_message => e.message)
       end
-      begin
-        uncompressed_preview = ""
-        Zlib::GzipReader.wrap(StringIO.new(compressed_payload.string)) do |reader|
-          uncompressed_preview = reader.read
-        end
-        preview = uncompressed_preview.byteslice(0, 512)
-        preview += "...[truncated]" if uncompressed_preview && uncompressed_preview.bytesize > 512
-        @logger.info("Uncompressed payload preview", :json_preview => preview)
-      rescue => e
-        @logger.warn("Unable to preview uncompressed payload", :error_message => e.message)
-      end
-      nr_send(gzip_compress(payload.to_json, Zlib::DEFAULT_COMPRESSION))
+      preview = payload_json.byteslice(0, 512)
+      preview += "...[truncated]" if payload_json.bytesize > 512
+      @logger.info("Uncompressed payload preview", :json_preview => preview)
+      nr_send(compressed_payload)
     end
   end
 
