@@ -38,11 +38,13 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       @api_key.nil? ? 'X-License-Key' : 'X-Insert-Key' =>
         @api_key.nil? ? @license_key.value : @api_key.value
     }
+    used_header = auth.keys.first
     @header = {
       'X-Event-Source' => 'logs',
       'Content-Encoding' => 'gzip',
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
+    @logger.info("Configured New Relic authentication header", :header => used_header)
 
     client_options = {
       :pool_max => @concurrent_requests,
@@ -192,10 +194,16 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
       @logger.debug("Compressed payload size (#{compressed_size}) exceeds maximum packet size (1MB) and will be split in two.")
       split_index = log_record_count / 2
+      @logger.debug("Splitting payload", :split_index => split_index, :first_half => split_index, :second_half => log_record_count - split_index)
       package_and_send_recursively(nr_logs[0...split_index])
       package_and_send_recursively(nr_logs[split_index..-1])
     else
-      @logger.debug("Payload compressed size: #{compressed_size}")
+      @logger.debug("Payload compressed size: #{compressed_size}", :payload_preview => nr_logs.first)
+      begin
+        @logger.debug("Sample event JSON", :event_json => nr_logs.first.to_json)
+      rescue => e
+        @logger.warn("Failed to serialize sample event for logging", :error_message => e.message)
+      end
       nr_send(compressed_payload.string)
     end
   end
@@ -211,10 +219,28 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     retry_duration = 1
 
     begin
+      @logger.debug("Sending payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
       response = @client.post(@base_uri, :body => payload, :headers => @header)
+      response_body = nil
+      if response.respond_to?(:body)
+        begin
+          response_body = response.body
+        rescue => body_error
+          @logger.warn("Unable to read response body", :error_message => body_error.message)
+        end
+      end
+
+      @logger.debug("Received response from New Relic", :code => response.code, :message => response.message)
+      if response_body && !response_body.empty?
+        preview = response_body.byteslice(0, 512)
+        preview += "...[truncated]" if response_body.bytesize > 512
+        @logger.debug("Response body preview", :body_preview => preview)
+      end
       handle_response(response)
       if (retries > 0)
         @logger.warn("Successfully sent logs at retry #{retries}")
+      else
+        @logger.info("Successfully sent logs to New Relic", :response_code => response.code)
       end
     rescue Error::BadResponseCodeError => e
       @logger.error(e.message)
