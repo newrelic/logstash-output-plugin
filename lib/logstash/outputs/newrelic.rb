@@ -215,7 +215,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       rescue => e
         @logger.warn("Unable to preview uncompressed payload", :error_message => e.message)
       end
-      nr_send(compressed_payload.string)
+      nr_send(gzip_compress(payload.to_json, Zlib::DEFAULT_COMPRESSION))
     end
   end
 
@@ -223,6 +223,19 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if !(200 <= response.code && response.code < 300)
       raise Error::BadResponseCodeError.new(response.code, @base_uri)
     end
+  end
+
+   # Compress logs with GZIP
+  def gzip_compress(payload, compression_level)
+    gz = StringIO.new
+    gz.set_encoding("BINARY")
+    z = Zlib::GzipWriter.new(gz, compression_level)
+    begin
+      z.write(payload)
+    ensure
+      z.close
+    end
+    gz.string
   end
 
   def nr_send(payload)
