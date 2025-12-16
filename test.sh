@@ -26,7 +26,8 @@ clean_up () {
 trap clean_up EXIT
 
 function run_test {
-  echo "Starting test for Logstash version ${LOGSTASH_VERSION}"
+  export UNIQUE_ID=$(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
+  echo "Starting test for Logstash version ${LOGSTASH_VERSION} with unique ID: ${UNIQUE_ID}"
 
   echo "Starting docker compose"
   docker compose -f ./test/docker-compose.yml up -d
@@ -83,7 +84,7 @@ function run_test {
     echo "=== Verifying logs in New Relic ==="
     
     # Query New Relic for our test logs with retries
-    NRQL_QUERY="SELECT count(*) FROM Log WHERE message = 'Hello!' SINCE 5 minutes ago"
+    NRQL_QUERY="SELECT count(*) FROM Log WHERE message = 'Hello! ${UNIQUE_ID}' AND plugin.type = 'logstash' AND plugin.version = '${plugin_version}' SINCE 5 minutes ago"
     
     max_retry=6
     retry_count=0
@@ -138,7 +139,7 @@ function verify_java {
 }
 
 function build_plugin {
-  plugin_version=$(cat lib/logstash/outputs/newrelic_version/version.rb | grep -o 'VERSION = "[^"]*"' | awk -F'"' '{print $2}')
+  export plugin_version=$(cat lib/logstash/outputs/newrelic_version/version.rb | grep -o 'VERSION = "[^"]*"' | awk -F'"' '{print $2}')
   echo "Building plugin version $plugin_version"
   jruby -S gem build logstash-output-newrelic.gemspec
 }
