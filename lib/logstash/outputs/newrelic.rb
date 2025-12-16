@@ -192,15 +192,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       package_and_send_recursively(nr_logs[0...split_index])
       package_and_send_recursively(nr_logs[split_index..-1])
     else
-      @logger.info("Payload ready for send", :compressed_size => compressed_size, :payload_preview => nr_logs.first)
-      begin
-        @logger.info("Sample event JSON", :event_json => nr_logs.first.to_json)
-      rescue => e
-        @logger.warn("Failed to serialize sample event for logging", :error_message => e.message)
-      end
-      preview = payload_json.byteslice(0, 512)
-      preview += "...[truncated]" if payload_json.bytesize > 512
-      @logger.info("Uncompressed payload preview", :json_preview => preview)
       nr_send(compressed_payload)
     end
   end
@@ -211,17 +202,18 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
   end
 
-   # Compress logs with GZIP
+  # Compresses a given payload string using GZIP.
+  #
+  # @param payload [String] The string payload to be compressed.
+  # @param compression_level [Integer] The GZIP compression level to use.
+  # @return [String] The GZIP-compressed binary string.
   def gzip_compress(payload, compression_level)
-    gz = StringIO.new
-    gz.set_encoding("BINARY")
-    z = Zlib::GzipWriter.new(gz, compression_level)
-    begin
-      z.write(payload)
-    ensure
-      z.close
+    string_io = StringIO.new
+    string_io.set_encoding("BINARY")
+    Zlib::GzipWriter.wrap(string_io, compression_level) do |gz|
+      gz.write(payload)
     end
-    gz.string
+    string_io.string
   end
 
   def nr_send(payload)
@@ -231,34 +223,12 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     begin
       @logger.info("Dispatching payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
       response = @client.post(@base_uri, :body => payload, :headers => @header)
-      response_body = nil
-      if response.respond_to?(:body)
-        begin
-          response_body = response.body
-        rescue => body_error
-          @logger.warn("Unable to read response body", :error_message => body_error.message)
-        end
-      end
-
       @logger.info("Received response from New Relic", :code => response.code, :message => response.message)
-      if response_body && !response_body.empty?
-        preview = response_body.byteslice(0, 512)
-        preview += "...[truncated]" if response_body.bytesize > 512
-        @logger.info("Response body preview", :body_preview => preview)
-        begin
-          parsed_body = JSON.parse(response_body)
-          if parsed_body.is_a?(Hash) && parsed_body['requestId']
-            @logger.info("New Relic acknowledged request", :request_id => parsed_body['requestId'])
-          end
-        rescue JSON::ParserError => parse_error
-          @logger.warn("Unable to parse response body as JSON", :error_message => parse_error.message)
-        end
-      end
       handle_response(response)
       if (retries > 0)
         @logger.warn("Successfully sent logs at retry #{retries}")
       else
-        @logger.info("Successfully sent logs to New Relic", :response_code => response.code)
+        @logger.debug("Successfully sent logs to New Relic", :response_code => response.code)
       end
     rescue Error::BadResponseCodeError => e
       @logger.error(e.message)
