@@ -25,7 +25,11 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
   s.add_runtime_dependency "logstash-codec-plain"
   s.add_runtime_dependency "manticore"
-  s.add_development_dependency "logstash-devutils"
+  
+  # Development dependencies - logstash-devutils only available on java platform (JRuby)
+  if RUBY_PLATFORM == "java"
+    s.add_development_dependency "logstash-devutils"
+  end
   s.add_development_dependency "webmock"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rspec-wait"
