@@ -1,5 +1,8 @@
 source 'https://rubygems.org'
-gemspec
+
+# This is a JRuby-only project (Logstash plugin)
+# Only load gemspec on JRuby platform
+gemspec if RUBY_PLATFORM == "java"
 
 # The following is required to locally develop this plugin. Note that this Gemfile is NOT used when building the gem
 # file for this plugin (see merge-to-master.yml), only when unit testing. When unit-testing, we need to have logstash-core
@@ -12,5 +15,4 @@ logstash_path = ENV['LOGSTASH_PATH'] || '/opt/homebrew/Cellar/logstash/8.9.0/lib
 if Dir.exist?(logstash_path)
   gem 'logstash-core', :path => "#{logstash_path}/logstash-core"
   gem 'logstash-core-plugin-api', :path => "#{logstash_path}/logstash-core-plugin-api"
-  gem "logstash-devutils", :path => "#{logstash_path}/logstash-devutils"
 end
