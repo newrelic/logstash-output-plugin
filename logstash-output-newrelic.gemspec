@@ -12,6 +12,9 @@ Gem::Specification.new do |s|
   s.authors       = ['New Relic Logging Team']
   s.email         = 'logging-team@newrelic.com'
   s.require_paths = ['lib']
+  
+  # This is a Logstash plugin and requires JRuby
+  s.platform      = 'java'
 
   # Files
   s.files = Dir['lib/**/*','spec/**/*','vendor/**/*','*.gemspec','*.md','CONTRIBUTORS','Gemfile','LICENSE','NOTICE.TXT']
@@ -25,11 +28,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "logstash-core-plugin-api", "~> 2.0"
   s.add_runtime_dependency "logstash-codec-plain"
   s.add_runtime_dependency "manticore"
-  
-  # Development dependencies - logstash-devutils only available on java platform (JRuby)
-  if RUBY_PLATFORM == "java"
-    s.add_development_dependency "logstash-devutils"
-  end
+  s.add_development_dependency "logstash-devutils"
   s.add_development_dependency "webmock"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rspec-wait"
