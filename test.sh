@@ -26,8 +26,7 @@ clean_up () {
 trap clean_up EXIT
 
 function run_test {
-  export UNIQUE_ID=$(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
-  echo "Starting test for Logstash version ${LOGSTASH_VERSION} with unique ID: ${UNIQUE_ID}"
+  echo "Starting test for Logstash version ${LOGSTASH_VERSION}"
 
   echo "Starting docker compose"
   docker compose -f ./test/docker-compose.yml up -d
@@ -84,7 +83,7 @@ function run_test {
     echo "=== Verifying logs in New Relic ==="
     
     # Query New Relic for our test logs with retries
-    NRQL_QUERY="SELECT count(*) FROM Log WHERE message = 'Hello! ${UNIQUE_ID}' AND plugin.type = 'logstash' AND plugin.version = '${plugin_version}' SINCE 5 minutes ago"
+    NRQL_QUERY="SELECT count(*) FROM Log WHERE message = 'Hello! ${LOGSTASH_VERSION}' AND plugin.type = 'logstash' AND plugin.version = '${plugin_version}' SINCE 5 minutes ago"
     
     max_retry=6
     retry_count=0

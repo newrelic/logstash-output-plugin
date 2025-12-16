@@ -12,4 +12,5 @@ logstash_path = ENV['LOGSTASH_PATH'] || '/opt/homebrew/Cellar/logstash/8.9.0/lib
 if Dir.exist?(logstash_path)
   gem 'logstash-core', :path => "#{logstash_path}/logstash-core"
   gem 'logstash-core-plugin-api', :path => "#{logstash_path}/logstash-core-plugin-api"
+  gem "logstash-devutils", :path => "#{logstash_path}/logstash-devutils"
 end

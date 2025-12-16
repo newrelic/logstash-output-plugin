@@ -10,4 +10,4 @@ services:
     environment:
       FILE_PATH: /usr/share/logstash/data/testdata/logstashtest.log
       LICENSE_KEY: ${LICENSE_KEY}
-      UNIQUE_ID: ${UNIQUE_ID}
+      LOGSTASH_VERSION: ${LOGSTASH_VERSION}
