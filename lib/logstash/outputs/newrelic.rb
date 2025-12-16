@@ -57,17 +57,14 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       client_options[:ssl] = {
         :verify => :default
       }
+      # Set reasonable timeouts for the HTTP client
+      client_options[:connect_timeout] = 30
+      client_options[:socket_timeout] = 30
       
       if !@custom_ca_cert.nil?
         # Load the custom CA certificate
         # For test environments with self-signed certs, disable verification
         client_options[:ssl][:ca_file] = @custom_ca_cert
-        client_options[:ssl][:verify] = :none  # Disable verification for test environments
-        
-        # Test environment specific settings to handle mockserver connections
-        client_options[:connect_timeout] = 60
-        client_options[:request_timeout] = 60
-        client_options[:socket_timeout] = 60
       end
     end
 
