@@ -6,8 +6,6 @@ set -e
 LOGSTASH_VERSION=${1:-"7.17.12"}
 export LOGSTASH_VERSION=$LOGSTASH_VERSION
 
-MOCKSERVER_PORT=1080
-
 clean_up () {
     ARG=$?
 

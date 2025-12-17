@@ -39,13 +39,11 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       @api_key.nil? ? 'X-License-Key' : 'X-Insert-Key' =>
         @api_key.nil? ? @license_key.value : @api_key.value
     }
-    used_header = auth.keys.first
     @header = {
       'X-Event-Source' => 'logs',
       'Content-Encoding' => 'gzip',
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
-    @logger.info("Configured New Relic authentication header", :header => used_header)
 
     client_options = {
       :pool_max => @concurrent_requests,
@@ -79,14 +77,17 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     @semaphore = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
+  # Shutdown hook called by Logstash 5.x and 6.x versions during pipeline shutdown
   def stop
     shutdown
   end
 
+  # Shutdown hook called by Logstash 7.x+ versions during pipeline shutdown
   def close
     shutdown
   end
 
+  # Additional shutdown hook for cleanup, called by some Logstash versions
   def teardown
     shutdown
   end
@@ -186,9 +187,9 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
       @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
     elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
-      @logger.info("Compressed payload size exceeds maximum packet size, splitting payload", :compressed_size => compressed_size)
+      @logger.debug("Compressed payload size exceeds maximum packet size, splitting payload", :compressed_size => compressed_size)
       split_index = log_record_count / 2
-      @logger.info("Splitting payload", :split_index => split_index, :first_half => split_index, :second_half => log_record_count - split_index)
+      @logger.debug("Splitting payload", :split_index => split_index, :first_half => split_index, :second_half => log_record_count - split_index)
       package_and_send_recursively(nr_logs[0...split_index])
       package_and_send_recursively(nr_logs[split_index..-1])
     else
