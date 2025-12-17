@@ -1,0 +1,64 @@
+name: New Relic Logstash Output Plugin - Merge to master or develop
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  version-check:
+    name: Check version for develop branch
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Verify version contains 'beta'
+        run: |
+          VERSION=$(grep -o 'VERSION = "[^"]*"' lib/logstash/outputs/newrelic_version/version.rb | awk -F'"' '{print $2}')
+          echo "Found version: $VERSION"
+          if [[ ! "$VERSION" =~ beta ]]; then
+            echo "❌ Error: Version '$VERSION' does not contain 'beta'"
+            echo "Develop branch versions must contain 'beta' (e.g., '1.5.4-beta')"
+            exit 1
+          fi
+          echo "✓ Version check passed: '$VERSION' contains 'beta'"
+
+  cd:
+    name: Continuous Delivery pipeline
+    runs-on: ubuntu-22.04
+    needs: [version-check]
+    if: always() && (github.ref == 'refs/heads/master' || needs.version-check.result == 'success')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup JRuby, bundler and install dependencies
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: jruby-9.2.13.0
+      - run: bundle install
+
+      - name: Run unit tests
+        run: jruby -S bundle exec rspec --format RspecJunitFormatter  --out test-results.xml
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1.5
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: test-results.xml
+
+      - name: Build gem
+        run: jruby -S gem build logstash-output-newrelic.gemspec
+
+      - name: Publish logstash-output-newrelic to rubygems.org
+        if: github.ref == 'refs/heads/master'
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+        run: |
+          jruby -S gem push logstash-output-newrelic-*.gem
