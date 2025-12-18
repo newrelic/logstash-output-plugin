@@ -50,4 +50,8 @@ jobs:
 
       - name: Logstash E2E testing
         run: ./test.sh ${{ matrix.logstash_version }}
+        env:
+          LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
+          NEW_RELIC_ACCOUNT_ID: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+          NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
 
