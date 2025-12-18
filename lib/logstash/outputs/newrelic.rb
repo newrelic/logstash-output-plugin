@@ -222,9 +222,9 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     retry_duration = 1
 
     begin
-      @logger.info("Dispatching payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
+      @logger.debug("Dispatching payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
       response = @client.post(@base_uri, :body => payload, :headers => @header)
-      @logger.info("Received response from New Relic", :code => response.code, :message => response.message)
+      @logger.debug("Received response from New Relic", :code => response.code, :message => response.message)
       handle_response(response)
       if (retries > 0)
         @logger.warn("Successfully sent logs at retry #{retries}")
