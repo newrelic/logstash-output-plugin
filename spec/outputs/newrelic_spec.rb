@@ -81,12 +81,12 @@ describe LogStash::Outputs::NewRelic do
       event = LogStash::Event.new({:message => "Test message" })
       @newrelic_output.multi_receive([event])
 
-      wait_for(a_request(:post, base_uri)
+      wait_for { a_request(:post, base_uri)
         .with(headers: {
                 "X-License-Key" => license_key,
                 "X-Event-Source" => "logs",
                 "Content-Encoding" => "gzip",
-              })).to have_been_made
+              }) }.to have_been_made
     end
   end
 
@@ -97,12 +97,12 @@ describe LogStash::Outputs::NewRelic do
       event = LogStash::Event.new({:message => "Test message" })
       @newrelic_output.multi_receive([event])
 
-      wait_for(a_request(:post, base_uri)
+      wait_for { a_request(:post, base_uri)
         .with(headers: {
                 "X-License-Key" => license_key,
                 "X-Event-Source" => "logs",
                 "Content-Encoding" => "gzip",
-              })).to have_been_made
+              }) }.to have_been_made
 
       # Check if the requests were made using HTTPS
       expect(WebMock).to have_requested(:post, base_uri).with { |req| req.uri.scheme == 'https' }
@@ -121,12 +121,12 @@ describe LogStash::Outputs::NewRelic do
       event = LogStash::Event.new({:message => "Test message" })
       @newrelic_output.multi_receive([event])
 
-      wait_for(a_request(:post, "http://localhost:5000/")
+      wait_for { a_request(:post, "http://localhost:5000/")
         .with(headers: {
                 "X-License-Key" => license_key,
                 "X-Event-Source" => "logs",
                 "Content-Encoding" => "gzip",
-              })).to have_been_made
+              }) }.to have_been_made
 
       # Check if the requests were made using HTTP to this endpoint
       expect(WebMock).to have_requested(:post, "http://localhost:5000/").with { |req| req.uri.scheme == 'http' }
@@ -236,12 +236,12 @@ describe LogStash::Outputs::NewRelic do
       event = LogStash::Event.new({:message => "Test message" })
       @newrelic_output.multi_receive([event])
 
-      wait_for(a_request(:post, base_uri)
+      wait_for { a_request(:post, base_uri)
         .with(headers: {
                 "X-Insert-Key" => api_key,
                 "X-Event-Source" => "logs",
                 "Content-Encoding" => "gzip",
-              })).to have_been_made
+              }) }.to have_been_made
     end
   end
 
@@ -267,10 +267,6 @@ describe LogStash::Outputs::NewRelic do
 
       wait_for { ManticoreRequestCapture.last_body }.not_to be_nil
       captured_body = ManticoreRequestCapture.last_body
-      
-      puts "DEBUG: Captured body class: #{captured_body.class}"
-      puts "DEBUG: Captured body length: #{captured_body.length rescue 'N/A'}"
-      puts "DEBUG: First 20 bytes: #{captured_body.to_s[0..19].bytes.map{|b| "\\x%02X" % b}.join rescue 'N/A'}"
       
       message = single_gzipped_message(captured_body)
       expect(message['message']).to eq('Test message')
@@ -551,8 +547,8 @@ describe LogStash::Outputs::NewRelic do
 
       # Verify number of requests matches exactly 4. Note that .times() unexpectedly behaves as .at_least_times(), so we
       # are forced to do this double verification to check the exact number of calls.
-      wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(4)
-      wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(4)
+      wait_for { a_request(:post, base_uri) }.to have_been_made.at_least_times(4)
+      wait_for { a_request(:post, base_uri) }.to have_been_made.at_most_times(4)
 
       # Verify all expected msgIds were received
       captured_msg_ids = collect_msg_ids_from_captured_bodies
@@ -573,7 +569,7 @@ describe LogStash::Outputs::NewRelic do
 
       @newrelic_output.multi_receive(logstash_events)
 
-      wait_for(a_request(:post, base_uri)).not_to have_been_made
+      wait_for { a_request(:post, base_uri) }.not_to have_been_made
     end
 
     it "does a single request when the payload is below 1MB" do
@@ -592,8 +588,8 @@ describe LogStash::Outputs::NewRelic do
 
       # Verify number of requests matches exactly 1. Note that .times() unexpectedly behaves as .at_least_times(), so we
       # are forced to do this double verification to check the exact number of calls.
-      wait_for(a_request(:post, base_uri)).to have_been_made.at_least_times(1)
-      wait_for(a_request(:post, base_uri)).to have_been_made.at_most_times(1)
+      wait_for { a_request(:post, base_uri) }.to have_been_made.at_least_times(1)
+      wait_for { a_request(:post, base_uri) }.to have_been_made.at_most_times(1)
 
       # Verify all expected msgIds were received
       captured_msg_ids = collect_msg_ids_from_captured_bodies
