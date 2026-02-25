@@ -24,8 +24,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
   config :concurrent_requests, :validate => :number, :default => 1
   config :base_uri, :validate => :string, :default => "https://log-api.newrelic.com/log/v1"
   config :max_retries, :validate => :number, :default => 3
-  config :connect_timeout, :validate => :number, :default => 30
-  config :socket_timeout, :validate => :number, :default => 30
+  config :connect_timeout_seconds, :validate => :number, :default => 30
+  config :socket_timeout_seconds, :validate => :number, :default => 30
   # Only used for E2E testing
   config :custom_ca_cert, :validate => :string, :required => false
 
@@ -50,8 +50,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     client_options = {
       :pool_max => @concurrent_requests,
       :pool_max_per_route => @concurrent_requests,
-      :connect_timeout => @connect_timeout,
-      :socket_timeout => @socket_timeout
+      :connect_timeout => @connect_timeout_seconds,
+      :socket_timeout => @socket_timeout_seconds
     }
 
     # Only configure SSL if using HTTPS
