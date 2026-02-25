@@ -34,7 +34,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if @api_key.nil? && @license_key.nil?
       raise LogStash::ConfigurationError, "Must provide a license key or api key", caller
     end
-    @logger.info("Registering logstash-output-newrelic", :version => LogStash::Outputs::NewRelicVersion::VERSION, :target => @base_uri)
+    @logger.debug("Registering logstash-output-newrelic", :version => LogStash::Outputs::NewRelicVersion::VERSION, :target => @base_uri)
     auth = {
       @api_key.nil? ? 'X-License-Key' : 'X-Insert-Key' =>
         @api_key.nil? ? @license_key.value : @api_key.value
@@ -47,7 +47,9 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
     client_options = {
       :pool_max => @concurrent_requests,
-      :pool_max_per_route => @concurrent_requests
+      :pool_max_per_route => @concurrent_requests,
+      :connect_timeout => 30,
+      :socket_timeout => 30
     }
 
     # Only configure SSL if using HTTPS
@@ -55,9 +57,6 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       client_options[:ssl] = {
         :verify => :default
       }
-      # Set reasonable timeouts for the HTTP client
-      client_options[:connect_timeout] = 30
-      client_options[:socket_timeout] = 30
       
       if !@custom_ca_cert.nil?
         # Load the custom CA certificate
@@ -75,6 +74,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     # leak and results in an OutOfMemoryError.
     @executor = java.util.concurrent.Executors.newFixedThreadPool(@concurrent_requests)
     @semaphore = java.util.concurrent.Semaphore.new(@concurrent_requests)
+    @shutdown_complete = false
   end
 
   # Shutdown hook called by Logstash 5.x and 6.x versions during pipeline shutdown
@@ -94,8 +94,10 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
   def shutdown
+    return if @shutdown_complete
+
     if @executor
-      @logger.info("Draining outstanding New Relic requests")
+      @logger.debug("Draining outstanding New Relic requests")
       @executor.shutdown
       # We want this long enough to not have threading issues
       terminationWaitInSeconds = 10
@@ -106,9 +108,11 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     end
 
     if defined?(@client) && @client
-      @logger.info("Closing New Relic HTTP client")
+      @logger.debug("Closing New Relic HTTP client")
       @client.close
     end
+
+    @shutdown_complete = true
   end
 
   def time_to_logstash_timestamp(time)
@@ -149,7 +153,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
     nr_logs = to_nr_logs(logstash_events)
 
-    @logger.info("Submitting logs to New Relic", :event_count => nr_logs.length)
+    @logger.debug("Submitting logs to New Relic", :event_count => nr_logs.length)
 
     submit_logs_to_be_sent(nr_logs)
   end
