@@ -1,12 +1,13 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/outputs/newrelic_version/version"
-require 'net/http'
+require 'manticore'
 require 'uri'
 require 'zlib'
 require 'json'
 require 'java'
 require 'set'
+require 'stringio'
 require_relative './config/bigdecimal_patch'
 require_relative './exception/error'
 
@@ -33,6 +34,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     if @api_key.nil? && @license_key.nil?
       raise LogStash::ConfigurationError, "Must provide a license key or api key", caller
     end
+    @logger.info("Registering logstash-output-newrelic", :version => LogStash::Outputs::NewRelicVersion::VERSION, :target => @base_uri)
     auth = {
       @api_key.nil? ? 'X-License-Key' : 'X-Insert-Key' =>
         @api_key.nil? ? @license_key.value : @api_key.value
@@ -43,6 +45,29 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       'Content-Type' => 'application/json'
     }.merge(auth).freeze
 
+    client_options = {
+      :pool_max => @concurrent_requests,
+      :pool_max_per_route => @concurrent_requests
+    }
+
+    # Only configure SSL if using HTTPS
+    if @end_point.scheme == 'https'
+      client_options[:ssl] = {
+        :verify => :default
+      }
+      # Set reasonable timeouts for the HTTP client
+      client_options[:connect_timeout] = 30
+      client_options[:socket_timeout] = 30
+      
+      if !@custom_ca_cert.nil?
+        # Load the custom CA certificate
+        # For test environments with self-signed certs, disable verification
+        client_options[:ssl][:ca_file] = @custom_ca_cert
+      end
+    end
+
+    @client = Manticore::Client.new(client_options)
+
     # We use a semaphore to ensure that at most there are @concurrent_requests inflight Logstash requests being processed
     # by our plugin at the same time. Without this semaphore, given that @executor.submit() is an asynchronous method, it
     # would cause that an unbounded amount of inflight requests may be processed by our plugin. Logstash then believes
@@ -52,9 +77,25 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     @semaphore = java.util.concurrent.Semaphore.new(@concurrent_requests)
   end
 
+  # Shutdown hook called by Logstash 5.x and 6.x versions during pipeline shutdown
+  def stop
+    shutdown
+  end
+
+  # Shutdown hook called by Logstash 7.x+ versions during pipeline shutdown
+  def close
+    shutdown
+  end
+
+  # Additional shutdown hook for cleanup, called by some Logstash versions
+  def teardown
+    shutdown
+  end
+
   # Used by tests so that the test run can complete (background threads prevent JVM exit)
   def shutdown
     if @executor
+      @logger.info("Draining outstanding New Relic requests")
       @executor.shutdown
       # We want this long enough to not have threading issues
       terminationWaitInSeconds = 10
@@ -62,6 +103,11 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       if !terminatedInTime
         raise "Did not shut down within #{terminationWaitInSeconds} seconds"
       end
+    end
+
+    if defined?(@client) && @client
+      @logger.info("Closing New Relic HTTP client")
+      @client.close
     end
   end
 
@@ -103,6 +149,8 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
 
     nr_logs = to_nr_logs(logstash_events)
 
+    @logger.info("Submitting logs to New Relic", :event_count => nr_logs.length)
+
     submit_logs_to_be_sent(nr_logs)
   end
 
@@ -131,31 +179,42 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       :logs => nr_logs
     }
 
-    compressed_payload = StringIO.new
-    gzip = Zlib::GzipWriter.new(compressed_payload)
-    gzip << [payload].to_json
-    gzip.close
-
-    compressed_size = compressed_payload.string.bytesize
+    payload_json = [payload].to_json
+    compressed_payload = gzip_compress(payload_json, Zlib::DEFAULT_COMPRESSION)
+    compressed_size = compressed_payload.bytesize
     log_record_count = nr_logs.length
 
     if compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count == 1
       @logger.error("Can't compress record below required maximum packet size and it will be discarded.")
     elsif compressed_size >= MAX_PAYLOAD_SIZE_BYTES && log_record_count > 1
-      @logger.debug("Compressed payload size (#{compressed_size}) exceededs maximum packet size (1MB) and will be split in two.")
+      @logger.debug("Compressed payload size exceeds maximum packet size, splitting payload", :compressed_size => compressed_size)
       split_index = log_record_count / 2
+      @logger.debug("Splitting payload", :split_index => split_index, :first_half => split_index, :second_half => log_record_count - split_index)
       package_and_send_recursively(nr_logs[0...split_index])
       package_and_send_recursively(nr_logs[split_index..-1])
     else
-      @logger.debug("Payload compressed size: #{compressed_size}")
-      nr_send(compressed_payload.string)
+      nr_send(compressed_payload)
     end
   end
 
   def handle_response(response)
-    if !(200 <= response.code.to_i && response.code.to_i < 300)
-      raise Error::BadResponseCodeError.new(response.code.to_i, @base_uri)
+    if !(200 <= response.code && response.code < 300)
+      raise Error::BadResponseCodeError.new(response.code, @base_uri)
     end
+  end
+
+  # Compresses a given payload string using GZIP.
+  #
+  # @param payload [String] The string payload to be compressed.
+  # @param compression_level [Integer] The GZIP compression level to use.
+  # @return [String] The GZIP-compressed binary string.
+  def gzip_compress(payload, compression_level)
+    string_io = StringIO.new
+    string_io.set_encoding("BINARY")
+    Zlib::GzipWriter.wrap(string_io, compression_level) do |gz|
+      gz.write(payload)
+    end
+    string_io.string
   end
 
   def nr_send(payload)
@@ -163,21 +222,14 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
     retry_duration = 1
 
     begin
-      http = Net::HTTP.new(@end_point.host, @end_point.port || 443)
-      request = Net::HTTP::Post.new(@end_point.request_uri)
-      http.use_ssl = (@end_point.scheme == 'https')
-      http.verify_mode = @end_point.scheme == 'https' ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
-      if !@custom_ca_cert.nil?
-        store = OpenSSL::X509::Store.new
-        ca_cert = OpenSSL::X509::Certificate.new(File.read(@custom_ca_cert))
-        store.add_cert(ca_cert)
-        http.cert_store = store
-      end
-      @header.each { |k, v| request[k] = v }
-      request.body = payload
-      handle_response(http.request(request))
+      @logger.debug("Dispatching payload to New Relic", :endpoint => @base_uri, :payload_size => payload.bytesize)
+      response = @client.post(@base_uri, :body => payload, :headers => @header)
+      @logger.debug("Received response from New Relic", :code => response.code, :message => response.message)
+      handle_response(response)
       if (retries > 0)
         @logger.warn("Successfully sent logs at retry #{retries}")
+      else
+        @logger.debug("Successfully sent logs to New Relic", :response_code => response.code)
       end
     rescue Error::BadResponseCodeError => e
       @logger.error(e.message)
