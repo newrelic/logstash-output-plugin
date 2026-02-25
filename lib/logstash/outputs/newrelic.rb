@@ -61,8 +61,7 @@ class LogStash::Outputs::NewRelic < LogStash::Outputs::Base
       }
       
       if !@custom_ca_cert.nil?
-        # Load the custom CA certificate
-        # For test environments with self-signed certs, disable verification
+        # Load the custom CA certificate and add it to the SSL options for the HTTP client
         client_options[:ssl][:ca_file] = @custom_ca_cert
       end
     end
