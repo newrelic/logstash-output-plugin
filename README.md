@@ -60,6 +60,8 @@ Exactly one of the following:
 | concurrent_requests | The number of threads to make requests from | 1 |
 | base_uri | New Relic ingestion endpoint | https://log-api.newrelic.com/log/v1 |
 | max_retries | Maximum number attempts to retry to send a message. If set to 0, no re-attempts will be made. | 3 |
+| connect_timeout_seconds | Timeout in seconds for establishing an HTTP connection to New Relic | 30 |
+| socket_timeout_seconds | Timeout in seconds for waiting on data from New Relic after a connection is established | 30 |
 
 ### EU plugin configuration
 
