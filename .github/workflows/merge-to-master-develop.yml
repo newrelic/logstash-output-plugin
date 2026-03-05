@@ -1,14 +1,37 @@
-name: New Relic Logstash Output Plugin - Merge to master
+name: New Relic Logstash Output Plugin - Merge to master or develop
 
 on:
   push:
     branches:
       - master
+      - develop
 
 jobs:
+  version-check:
+    name: Check version for develop branch
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Verify version contains 'beta'
+        run: |
+          VERSION=$(grep -o 'VERSION = "[^"]*"' lib/logstash/outputs/newrelic_version/version.rb | awk -F'"' '{print $2}')
+          echo "Found version: $VERSION"
+          if [[ ! "$VERSION" =~ beta ]]; then
+            echo "❌ Error: Version '$VERSION' does not contain 'beta'"
+            echo "Develop branch versions must contain 'beta' (e.g., '1.5.4-beta')"
+            exit 1
+          fi
+          echo "✓ Version check passed: '$VERSION' contains 'beta'"
+
   cd:
     name: Continuous Delivery pipeline
     runs-on: ubuntu-22.04
+    needs: [version-check]
+    if: always() && (github.ref == 'refs/heads/master' || needs.version-check.result == 'success')
 
     steps:
       - name: Checkout code

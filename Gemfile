@@ -1,5 +1,8 @@
 source 'https://rubygems.org'
-gemspec
+
+# This is a JRuby-only project (Logstash plugin)
+# Only load gemspec on JRuby platform
+gemspec if RUBY_PLATFORM == "java"
 
 # The following is required to locally develop this plugin. Note that this Gemfile is NOT used when building the gem
 # file for this plugin (see merge-to-master.yml), only when unit testing. When unit-testing, we need to have logstash-core
