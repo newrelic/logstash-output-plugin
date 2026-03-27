@@ -16,23 +16,9 @@ Versions of this plugin less than 1.0.0 are unsupported.
 Add one of the following blocks to your logstash.conf (with your specific key), then restart Logstash.
 There are other optional configuration properties, see below.
 
-### Using API Insert Key
+### Use license key
 
-Get your API Insert Key:
-`https://insights.newrelic.com/accounts/<ACCOUNT_ID>/manage/api_keys`
-
-Example:
-```rb
-output {
-  newrelic {
-    api_key => "<API_INSERT_KEY>"
-  }
-}
-```
-
-### Using License Key
-
-Get your License Key:
+Get your [license key](https://docs.newrelic.com/docs/apis/getting-started/intro-apis/understand-new-relic-api-keys#ingest-license-key):
 `https://rpm.newrelic.com/accounts/<ACCOUNT_ID>`
 
 Example:
@@ -46,12 +32,11 @@ output {
 
 ### Required plugin configuration
 
-Exactly one of the following:
+Requires: 
 
 | Property | Description |
 |---|---|
-| api_key | your New Relic API Insert key |
-| license_key | your New Relic License key |
+| license_key | your New Relic [license key](https://docs.newrelic.com/docs/apis/getting-started/intro-apis/understand-new-relic-api-keys#ingest-license-key) |
 
 ### Optional plugin configuration
 
