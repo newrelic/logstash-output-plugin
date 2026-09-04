@@ -6,12 +6,15 @@ on:
       - master
       - develop
 
+permissions:
+  contents: read
+
 jobs:
   version-check:
     name: Check version for develop branch
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/develop'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -32,6 +35,9 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [version-check]
     if: always() && (github.ref == 'refs/heads/master' || needs.version-check.result == 'success')
+    permissions:
+      contents: read
+      checks: write
 
     steps:
       - name: Checkout code
