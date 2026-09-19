@@ -1,0 +1,6 @@
+FROM docker.elastic.co/logstash/logstash-oss:7.17.8
+RUN ln -s ruby  /usr/share/logstash/bin/jruby
+# Run the devel container as root as it's easier to install additional packages
+# like vim or emacs if you want to edit the files inside the container
+USER root
+ENTRYPOINT [ "/bin/bash" ]
